@@ -1,0 +1,5 @@
+src/ocr
+src/context
+*.o
+.DS_Store
+__pycache__/
