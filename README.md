@@ -4,8 +4,10 @@ A local, searchable memory of everything that has been on your screen.
 
 Captures the screen on an interval, reads the text with Apple's on-device Vision
 OCR, and indexes it in SQLite FTS5 — so you can find that thing you saw on
-Tuesday and cannot name. **Nothing leaves the machine.** There is no network call
-anywhere in the capture, OCR, index or search path, and a test asserts that.
+Tuesday and cannot name. **The capture, OCR, index and search path makes no network call at all** — a test
+asserts it. Driving the hatched twin over `/chat` is different: that conversation
+goes through the host brainstem's LLM (GitHub Copilot by default), so anything the
+agent quotes back has passed through it. The CLI is the strict-local path.
 
 Built because the product that did this got acquired and switched off. This one
 cannot be switched off, because it is a shell script, a SQLite file, and two

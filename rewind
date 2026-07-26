@@ -64,8 +64,16 @@ SAME_MAX = float(os.environ.get("REWIND_SAME_MAX", "12"))
 MAX_CONSECUTIVE_ERRORS = int(os.environ.get("REWIND_MAX_ERRORS", "5"))
 
 
+def _first_existing(*paths):
+    """Apple Silicon puts Homebrew in /opt/homebrew, Intel in /usr/local."""
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return paths[0]
+
+
 def ffmpeg():
-    return shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
+    return shutil.which("ffmpeg") or _first_existing("/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg")
 
 
 def run(args, **kw):
