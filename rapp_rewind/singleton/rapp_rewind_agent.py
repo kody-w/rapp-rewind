@@ -93,7 +93,6 @@ class RappRewindAgent(BasicAgent):
                     "since": {"type": "string", "description": "e.g. 30m, 6h, 2d."},
                     "limit": {"type": "integer", "description": "Max results."},
                     "days": {"type": "integer", "description": "Retention in days for prune."},
-                    "confirm": {"type": "boolean", "description": "Actually delete on prune."},
                 },
                 "required": [],
             },
@@ -120,12 +119,18 @@ class RappRewindAgent(BasicAgent):
                                  "--limit", str(int(kwargs.get("limit") or 400))])
                 return out if out is not None else err
             if action == "prune":
+                # ALWAYS a dry run from the agent surface. `confirm` used to be an
+                # LLM-settable boolean that became `--yes`, which turned the CLI's
+                # deliberate irreversible-delete guard into a parameter a model
+                # fills in from "free up space, don't ask me again". Deleting a
+                # user's screen history is not a thing a sentence should do.
                 args = ["prune", "--days", str(int(kwargs.get("days") or 30))]
-                if kwargs.get("confirm"):
-                    args.append("--yes")
                 out, err = _run(args)
-                if out is not None and not kwargs.get("confirm"):
-                    out += "\n\n(dry run — pass confirm=true to actually drop the images)"
+                if out is not None:
+                    out += ("\n\nThis was a DRY RUN and nothing was deleted. I cannot "
+                            "delete your screen history — deleting is irreversible, so "
+                            "it needs your hand on it:\n"
+                            f"    rewind prune --days {int(kwargs.get('days') or 30)} --yes")
                 return out if out is not None else err
             if action in ("doctor", "stats", "capture", "bench"):
                 out, err = _run([action])
