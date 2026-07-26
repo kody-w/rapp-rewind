@@ -102,7 +102,19 @@ txt=$(q "SELECT COUNT(*) FROM frames_fts")
 res=$("$REW" search "$word" 2>&1)
 case "$res" in *"match(es)"*) ok "search still works on pruned frames" ;; *) bad "search broke after prune" ;; esac
 
-head_ "7. Nothing here talks to the network"
+head_ "7. The daemon fails loudly, never silently"
+rm -rf /tmp/rw-fail
+# hide screencapture but KEEP python on PATH, or the test breaks itself
+PY3=$(command -v python3)
+code=$(REWIND_HOME=/tmp/rw-fail REWIND_MAX_ERRORS=2 PATH=/opt/homebrew/bin \
+        "$PY3" "$REW" start --foreground --interval 1 2>/tmp/rw-fail.err; echo $?)
+[ "$code" = "1" ] && ok "gives up with a non-zero exit when capture keeps failing" \
+  || bad "kept looping on repeated capture failure (exit $code)"
+grep -qi 'giving up' /tmp/rw-fail.err && ok "explains why on stderr" \
+  || bad "exited without saying why: $(head -c 120 /tmp/rw-fail.err)"
+rm -rf /tmp/rw-fail /tmp/rw-fail.err
+
+head_ "8. Nothing here talks to the network"
 netrefs=$(grep -nE 'urllib|requests|http://|https://|socket' "$REW" | grep -vE '^\s*#|"""|raw\.github|github\.com' | wc -l | tr -d ' ')
 [ "$netrefs" = "0" ] && ok "no network calls in the capture/search path" \
   || bad "$netrefs possible network reference(s) — this must stay offline"

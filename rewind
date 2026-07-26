@@ -58,6 +58,7 @@ QUALITY = int(os.environ.get("REWIND_QUALITY", "60"))
 FP_GRID = int(os.environ.get("REWIND_FP_GRID", "32"))
 SAME_MEAN = float(os.environ.get("REWIND_SAME_MEAN", "0.5"))
 SAME_MAX = float(os.environ.get("REWIND_SAME_MAX", "12"))
+MAX_CONSECUTIVE_ERRORS = int(os.environ.get("REWIND_MAX_ERRORS", "5"))
 
 
 def ffmpeg():
@@ -340,15 +341,40 @@ def capture_loop(interval):
         fh.write(str(os.getpid()))
     conn = db()
     log(f"capture start interval={interval} width={WIDTH} q={QUALITY}")
+    # A capture daemon that fails silently is the exact failure this product
+    # exists to prevent, so consecutive failures are fatal rather than a loop
+    # that fills a log nobody reads. The common cause is Screen Recording not
+    # being granted to whatever launched this — a launchd agent does not inherit
+    # the terminal's grant, so it fails every single time.
+    consecutive = 0
     try:
         while True:
             t0 = time.time()
             try:
                 kind, detail = capture_once(conn)
                 if kind == "error":
-                    log(f"capture error: {detail}")
+                    consecutive += 1
+                    log(f"capture error ({consecutive}/{MAX_CONSECUTIVE_ERRORS}): {detail}")
+                    if consecutive >= MAX_CONSECUTIVE_ERRORS:
+                        msg = (f"giving up after {consecutive} consecutive failures: {detail}. "
+                               "If this says 'could not create image from display', the process "
+                               "that launched capture has no Screen Recording permission — a "
+                               "launchd agent does not inherit the terminal's grant. Run "
+                               "`rewind start` from a terminal that does.")
+                        log(msg)
+                        print(msg, file=sys.stderr)
+                        return 1
+                else:
+                    consecutive = 0
             except Exception as exc:
+                consecutive += 1
                 log(f"capture exception: {type(exc).__name__}: {exc}")
+                if consecutive >= MAX_CONSECUTIVE_ERRORS:
+                    msg = (f"giving up after {consecutive} consecutive exceptions: "
+                           f"{type(exc).__name__}: {exc}")
+                    log(msg)
+                    print(msg, file=sys.stderr)
+                    return 1
             time.sleep(max(0.5, interval - (time.time() - t0)))
     except KeyboardInterrupt:
         pass

@@ -140,15 +140,35 @@ search still works on pruned frames.
 
 ---
 
-## Running as a service
+## Running it continuously — and the wall you will hit
 
-```bash
-./install.sh --service     # launchd agent, starts at login
-launchctl list | grep com.rapp.rewind
-rm ~/Library/LaunchAgents/com.rapp.rewind.plist   # uninstall
+`rewind start` works from a terminal that has Screen Recording permission. That
+is the supported path today, and it is what the numbers above were measured on.
+
+**A launchd agent does not work, and you should know why before you try.** TCC
+grants Screen Recording to the *responsible process*, and a background agent is
+not your terminal — so every capture fails with `could not create image from
+display`. Wrapping it in an unsigned `.app` bundle does not help either: macOS
+has nothing to attribute the grant to, so it never prompts. Both were tried and
+measured, not assumed.
+
+`./install.sh --service` still installs the agent and warns you about exactly
+this. To make it work you must grant Screen Recording to the `python3` binary the
+agent runs — a one-click decision that is genuinely yours, not something a script
+should do behind your back. A signed, notarised app bundle would fix it properly
+and is the right next step.
+
+What the daemon does *not* do any more is fail quietly. After five consecutive
+failures it stops and says why:
+
+```
+giving up after 5 consecutive failures: screencapture wrote nothing: could not
+create image from display. If this says 'could not create image from display',
+the process that launched capture has no Screen Recording permission …
 ```
 
-User-level only — no sudo, nothing in `/Library`.
+The first version logged that error every 4 seconds forever into a file nobody
+reads, which is the same sin — a memory that quietly forgets — one layer down.
 
 ---
 

@@ -45,6 +45,9 @@ case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "add ~/.local/bin to your P
 
 if [ "${1:-}" = "--service" ]; then
   say "launchd agent"
+  warn "a launchd agent does NOT inherit your terminal's Screen Recording grant."
+  warn "macOS will refuse its captures until you grant Screen Recording to the"
+  warn "python3 binary the agent runs. Until then, use: rewind start"
   mkdir -p "$HOME/Library/LaunchAgents"
   cat > "$HOME/Library/LaunchAgents/com.rapp.rewind.plist" <<PL
 <?xml version="1.0" encoding="UTF-8"?>
