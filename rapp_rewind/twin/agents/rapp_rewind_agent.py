@@ -30,6 +30,11 @@ _CANDIDATES = [
     os.environ.get("REWIND_CLI"),
     shutil.which("rewind"),
     os.path.join(HOME, ".local", "bin", "rewind"),
+    "/opt/homebrew/bin/rewind",
+    "/usr/local/bin/rewind",
+    # Last resort only: the author's own checkout layout. Kept so a dev box works
+    # without installing, but it must never be the primary path — for anyone else
+    # it is simply a dead entry.
     os.path.join(HOME, "Documents", "Fable5", "rapp-rewind", "rewind"),
 ]
 
@@ -46,11 +51,21 @@ def _run(args, timeout=900):
     if not exe:
         return None, ("rewind CLI not found. Install rapp-rewind so that `rewind` is on PATH, "
                       "or set REWIND_CLI.")
-    p = subprocess.run([exe] + args, capture_output=True, text=True, timeout=timeout)
+    try:
+        p = subprocess.run([exe] + args, capture_output=True, text=True, timeout=timeout)
+    except FileNotFoundError as exc:
+        # A traceback is not an answer. Say what is missing and how to fix it.
+        return None, (f"{exe} could not be executed ({exc.strerror}). The tool is "
+                      f"installed but a component it shells out to is missing — run "
+                      f"./install.sh in that repo to build the shims.")
     out = (p.stdout or "").strip()
     err = (p.stderr or "").strip()
     if p.returncode != 0 and not out:
-        return None, err or "command failed"
+        return None, err or f"`{os.path.basename(exe)} {' '.join(args)}` failed with no output"
+    if not out and not err:
+        # /chat must never answer with nothing — the estate contract says the
+        # answer lives in `response`, and an empty response reads as a hang.
+        return f"`{os.path.basename(exe)} {' '.join(args)}` completed and produced no output.", None
     return out or err, None
 
 

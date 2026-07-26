@@ -31,7 +31,10 @@ ROOT = os.environ.get("REWIND_HOME", os.path.join(HOME, ".rapprewind"))
 FRAMES = os.path.join(ROOT, "frames")
 LOGS = os.path.join(ROOT, "logs")
 DB = os.path.join(ROOT, "index.sqlite3")
-BIN = os.path.dirname(os.path.abspath(__file__))
+# realpath, not abspath — install.sh symlinks `rewind` into ~/.local/bin, and
+# abspath left BIN pointing there, so both Swift shims read as missing and
+# capture silently indexed nothing.
+BIN = os.path.dirname(os.path.realpath(__file__))
 OCR = os.path.join(BIN, "src", "ocr")
 CTX = os.path.join(BIN, "src", "context")
 PIDFILE = os.path.join(ROOT, "capture.pid")
@@ -204,6 +207,10 @@ def screen_context():
 
 def ocr_text(path):
     if not os.access(OCR, os.X_OK):
+        # Loud, once per capture: an index that silently stores no text is worse
+        # than no index, because search then lies by omission.
+        log(f"OCR shim missing at {OCR} — frame stored with NO text. "
+            f"Run ./install.sh to build the Swift shims.")
         return "", 0, 0.0
     p = run([OCR, path], timeout=120)
     try:
@@ -269,6 +276,7 @@ def capture_once(conn, verbose=False):
 # ------------------------------------------------------------------- subcommands
 def cmd_doctor(a):
     print("RAPP Rewind environment")
+    print(f"  shims  {BIN}/src")
     checks = [
         ("screencapture", shutil.which("screencapture") is not None),
         ("sips (downscale)", shutil.which("sips") is not None),
