@@ -1,0 +1,120 @@
+"""RAPP Rewind — A local, searchable memory of everything that has been on your screen. Nothing is uploaded.
+
+Runs entirely on the machine the brainstem is running on. This agent is a thin,
+allowlisted wrapper over the rewind CLI that ships in the same repository: every
+action maps to one subcommand with validated arguments, so the agent cannot be
+talked into running arbitrary shell.
+
+Stdlib only.
+"""
+
+import os
+import shutil
+import subprocess
+
+from agents.basic_agent import BasicAgent
+
+__manifest__ = {
+    "schema": "rapp-agent/1.0",
+    "name": "rapp_rewind",
+    "version": "1.0.0",
+    "description": "A local, searchable memory of everything that has been on your screen. Nothing is uploaded.",
+    "author": "@kody-w",
+    "tags": ["screen", "ocr", "search", "memory", "local-first", "privacy"],
+    "dependencies": ["@rapp/basic_agent"],
+    "requires_env": [],
+}
+
+HOME = os.path.expanduser("~")
+_CANDIDATES = [
+    os.environ.get("REWIND_CLI"),
+    shutil.which("rewind"),
+    os.path.join(HOME, ".local", "bin", "rewind"),
+    os.path.join(HOME, "Documents", "Fable5", "rapp-rewind", "rewind"),
+]
+
+
+def _cli():
+    for c in _CANDIDATES:
+        if c and os.access(c, os.X_OK):
+            return c
+    return None
+
+
+def _run(args, timeout=900):
+    exe = _cli()
+    if not exe:
+        return None, ("rewind CLI not found. Install rapp-rewind so that `rewind` is on PATH, "
+                      "or set REWIND_CLI.")
+    p = subprocess.run([exe] + args, capture_output=True, text=True, timeout=timeout)
+    out = (p.stdout or "").strip()
+    err = (p.stderr or "").strip()
+    if p.returncode != 0 and not out:
+        return None, err or "command failed"
+    return out or err, None
+
+
+class RappRewindAgent(BasicAgent):
+    """A local, searchable memory of everything that has been on your screen. Nothing is uploaded."""
+
+    ACTIONS = ("doctor", "search", "stats", "capture", "timeline", "prune", "bench")
+
+    def __init__(self):
+        self.name = "RappRewind"
+        self.metadata = {
+            "name": self.name,
+            "description": "Searchable local memory of what has been on screen. Capture, OCR and search all happen on this machine, and nothing is uploaded. Actions: doctor, search, stats, capture, timeline, prune, bench.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string",
+                               "enum": ["doctor", "search", "stats", "capture",
+                                        "timeline", "prune", "bench"],
+                               "description": "What to do. Default doctor."},
+                    "query": {"type": "string", "description": "Search text, required for search."},
+                    "app": {"type": "string", "description": "Restrict a search to an app name."},
+                    "since": {"type": "string", "description": "e.g. 30m, 6h, 2d."},
+                    "limit": {"type": "integer", "description": "Max results."},
+                    "days": {"type": "integer", "description": "Retention in days for prune."},
+                    "confirm": {"type": "boolean", "description": "Actually delete on prune."},
+                },
+                "required": [],
+            },
+        }
+        super().__init__(self.name, self.metadata)
+
+    def perform(self, **kwargs):
+        action = (kwargs.get("action") or "doctor").strip().lower()
+        try:
+            if action == "search":
+                q = kwargs.get("query")
+                if not q:
+                    return "search needs `query` — the text you remember seeing"
+                args = ["search"] + str(q).split()
+                if kwargs.get("app"):
+                    args += ["--app", str(kwargs["app"])]
+                if kwargs.get("since"):
+                    args += ["--since", str(kwargs["since"])]
+                args += ["--limit", str(int(kwargs.get("limit") or 20))]
+                out, err = _run(args)
+                return out if out is not None else err
+            if action == "timeline":
+                out, err = _run(["timeline", "--since", str(kwargs.get("since") or "1d"),
+                                 "--limit", str(int(kwargs.get("limit") or 400))])
+                return out if out is not None else err
+            if action == "prune":
+                args = ["prune", "--days", str(int(kwargs.get("days") or 30))]
+                if kwargs.get("confirm"):
+                    args.append("--yes")
+                out, err = _run(args)
+                if out is not None and not kwargs.get("confirm"):
+                    out += "\n\n(dry run — pass confirm=true to actually drop the images)"
+                return out if out is not None else err
+            if action in ("doctor", "stats", "capture", "bench"):
+                out, err = _run([action])
+                return out if out is not None else err
+            return "unknown action '%s'. Try: %s" % (action, ", ".join(self.ACTIONS))
+        except subprocess.TimeoutExpired:
+            return "action '%s' timed out" % action
+        except Exception as exc:
+            return "action '%s' failed: %s: %s" % (action, type(exc).__name__, exc)

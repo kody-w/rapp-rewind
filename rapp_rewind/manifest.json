@@ -1,0 +1,32 @@
+{
+  "schema": "rapp-application/1.0",
+  "id": "rapp_rewind",
+  "name": "RAPP Rewind",
+  "version": "1.0.0",
+  "publisher": "@kody-w",
+  "manifest_name": "@kody-w/rapp-rewind-singleton",
+  "runtime": "twin",
+  "summary": "A local, searchable memory of everything that has been on your screen. Captures on an interval, reads the text with Apple's on-device Vision OCR, and indexes it in SQLite FTS5 so you can search what you saw. Nothing leaves the machine: there is no network call anywhere in the capture, OCR, index or search path.",
+  "tagline": "A local, searchable memory of everything that has been on your screen.",
+  "category": "productivity",
+  "tags": [
+    "rapplication",
+    "screen",
+    "ocr",
+    "search",
+    "memory",
+    "local-first",
+    "privacy",
+    "has-ui"
+  ],
+  "agent": "singleton/rapp_rewind_agent.py",
+  "ui": "ui/index.html",
+  "license": "MIT",
+  "homepage": "https://github.com/kody-w/rapp-rewind",
+  "quality_tier": "community",
+  "twin": {
+    "soul": "twin/soul.md",
+    "agents": "twin/agents",
+    "port": 7092
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "id": "rapp_rewind",
+  "name": "RAPP Rewind",
+  "version": "1.0.0",
+  "summary": "A local, searchable memory of everything that has been on your screen. Captures on an interval, reads the text with Apple's on-device Vision OCR, and indexes it in SQLite FTS5 so you can search what you saw. Nothing leaves the machine: there is no network call anywhere in the capture, OCR, index or search path.",
+  "tagline": "A local, searchable memory of everything that has been on your screen.",
+  "category": "productivity",
+  "tags": [
+    "rapplication",
+    "screen",
+    "ocr",
+    "search",
+    "memory",
+    "local-first",
+    "privacy",
+    "has-ui"
+  ],
+  "manifest_name": "@kody-w/rapp-rewind-singleton",
+  "license": "MIT",
+  "publisher": "@kody-w",
+  "quality_tier": "community",
+  "singleton_filename": "rapp_rewind_agent.py",
+  "singleton_url": "https://raw.githubusercontent.com/kody-w/rapp-rewind/main/rapp_rewind/singleton/rapp_rewind_agent.py",
+  "ui_url": "https://raw.githubusercontent.com/kody-w/rapp-rewind/main/rapp_rewind/ui/index.html",
+  "ui_filename": "index.html",
+  "egg_url": "https://raw.githubusercontent.com/kody-w/rapp-rewind/main/rapp_rewind/eggs/rapp_rewind.egg",
+  "egg_note": "Ships with no state. The egg is the hatch cartridge only \u2014 no captures, recordings, transcripts, vocabulary or personal data.",
+  "source": {
+    "type": "federation",
+    "repo": "kody-w/rapp-rewind",
+    "ref": "main",
+    "path": "rapp_rewind"
+  },
+  "example_call": {
+    "args": {
+      "action": "doctor"
+    }
+  }
+}
