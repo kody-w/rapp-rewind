@@ -1,4 +1,5 @@
-"""RAPP Rewind — A local, searchable memory of everything that has been on your screen. Nothing is uploaded.
+"""RAPP Rewind — A local, searchable memory of everything that has been on your screen. Capture, OCR and search all run on
+this machine; this agent has no network egress of its own.
 
 Runs entirely on the machine the brainstem is running on. This agent is a thin,
 allowlisted wrapper over the rewind CLI that ships in the same repository: every
@@ -18,7 +19,7 @@ __manifest__ = {
     "schema": "rapp-agent/1.0",
     "name": "rapp_rewind",
     "version": "1.0.0",
-    "description": "A local, searchable memory of everything that has been on your screen. Nothing is uploaded.",
+    "description": "A local, searchable memory of everything that has been on your screen.",
     "author": "@kody-w",
     "tags": ["screen", "ocr", "search", "memory", "local-first", "privacy"],
     "dependencies": ["@rapp/basic_agent"],
@@ -31,6 +32,7 @@ _CANDIDATES = [
     shutil.which("rewind"),
     os.path.join(HOME, ".local", "bin", "rewind"),
     "/opt/homebrew/bin/rewind",
+    "/usr/local/bin/rewind",
     "/usr/local/bin/rewind",
     # Last resort only: the author's own checkout layout. Kept so a dev box works
     # without installing, but it must never be the primary path — for anyone else
@@ -70,7 +72,7 @@ def _run(args, timeout=900):
 
 
 class RappRewindAgent(BasicAgent):
-    """A local, searchable memory of everything that has been on your screen. Nothing is uploaded."""
+    """A local, searchable memory of everything that has been on your screen."""
 
     ACTIONS = ("doctor", "search", "stats", "capture", "timeline", "prune", "bench")
 
@@ -78,7 +80,7 @@ class RappRewindAgent(BasicAgent):
         self.name = "RappRewind"
         self.metadata = {
             "name": self.name,
-            "description": "Searchable local memory of what has been on screen. Capture, OCR and search all happen on this machine, and nothing is uploaded. Actions: doctor, search, stats, capture, timeline, prune, bench.",
+            "description": "Searchable local memory of what has been on screen. Capture, OCR and search all happen on this machine. Actions: doctor, search, stats, capture, timeline, prune, bench.",
             "parameters": {
                 "type": "object",
                 "properties": {

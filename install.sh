@@ -3,6 +3,14 @@
 #   ./install.sh            install
 #   ./install.sh --service  ...and start at login via launchd
 set -uo pipefail
+
+# Homebrew prefix differs by architecture (/opt/homebrew on Apple Silicon,
+# /usr/local on Intel). Resolve rather than hardcode, or this file is a no-op
+# on half the Macs it targets.
+brewbin() { for p in "/opt/homebrew/bin/$1" "/usr/local/bin/$1"; do
+    [ -x "$p" ] && { echo "$p"; return; }; done
+  command -v "$1" 2>/dev/null || echo "/opt/homebrew/bin/$1"; }
+
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 RW="${REWIND_HOME:-$HOME/.rapprewind}"
 say(){ printf '\033[1;36m==>\033[0m %s\n' "$*"; }
@@ -15,7 +23,7 @@ command -v swiftc >/dev/null || die "swiftc not found — install the Xcode Comm
 ok "swiftc $(swiftc --version 2>/dev/null | head -1 | sed 's/.*Swift version //;s/ .*//')"
 command -v sips >/dev/null && ok "sips" || die "sips missing (ships with macOS)"
 command -v screencapture >/dev/null && ok "screencapture" || die "screencapture missing"
-if command -v ffmpeg >/dev/null || [ -x /opt/homebrew/bin/ffmpeg ]; then ok "ffmpeg"
+if command -v ffmpeg >/dev/null || [ -x $(brewbin ffmpeg) ]; then ok "ffmpeg"
 else
   command -v brew >/dev/null || die "ffmpeg missing and no Homebrew to install it"
   say "installing ffmpeg"; brew install ffmpeg || die "brew install ffmpeg failed"

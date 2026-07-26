@@ -10,6 +10,14 @@
 # quality is MEASURED and printed rather than asserted.
 set -uo pipefail
 
+
+# Homebrew prefix differs by architecture (/opt/homebrew on Apple Silicon,
+# /usr/local on Intel). Resolve rather than hardcode, or this file is a no-op
+# on half the Macs it targets.
+brewbin() { for p in "/opt/homebrew/bin/$1" "/usr/local/bin/$1"; do
+    [ -x "$p" ] && { echo "$p"; return; }; done
+  command -v "$1" 2>/dev/null || echo "/opt/homebrew/bin/$1"; }
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REW="$HERE/../rewind"
 export REWIND_HOME=/tmp/rewind-test
@@ -51,7 +59,7 @@ case "$capapp" in
 esac
 # Independent of what is on screen, prove the shim itself works on a known image.
 probe="$REWIND_HOME/probe_ocr.png"
-/opt/homebrew/bin/ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=white:s=600x120 \
+$(brewbin ffmpeg) -hide_banner -loglevel error -f lavfi -i color=c=white:s=600x120 \
   -frames:v 1 -y "$probe" 2>/dev/null
 if [ -x "$HERE/../src/ocr" ]; then
   "$HERE/../src/ocr" "$probe" >/dev/null 2>&1 && ok "OCR shim executes on a known image" \
@@ -96,14 +104,24 @@ if [ "${lines:-0}" -ge 1 ]; then
 else
   info "SKIP: nothing was indexed from a blank screen, so there is no snippet to check"
 fi
-"$REW" search zzzznotarealtokenzzzz >/dev/null 2>&1 && bad "search claimed a hit for nonsense" \
-  || ok "no false hit for a nonsense query"
+# rc 1 means "no results" and is the expected answer; anything else is a crash
+# that the old `&& bad || ok` form scored as a pass.
+ns=$("$REW" search zzzznotarealtokenzzzz 2>&1); nsrc=$?
+if [ "$nsrc" = 0 ]; then bad "search claimed a hit for nonsense"
+elif [ "$nsrc" != 1 ] || echo "$ns" | grep -q "Traceback"; then
+  bad "search crashed on a nonsense query (rc=$nsrc): $ns"
+else ok "no false hit for a nonsense query"; fi
 
 head_ "5. Timeline renders real data"
 "$REW" timeline --since 1d --out "$REWIND_HOME/t.html" >/dev/null 2>&1
 if [ -f "$REWIND_HOME/t.html" ]; then
   ok "timeline written"
-  grep -q '__DATA__' "$REWIND_HOME/t.html" && bad "placeholder not substituted" || ok "data substituted"
+  # positive assertion: an unreadable or empty file makes the old grep fail,
+  # which the || branch scored as "data substituted".
+  if ! [ -s "$REWIND_HOME/t.html" ]; then bad "timeline file is empty"
+  elif grep -q '__DATA__' "$REWIND_HOME/t.html"; then bad "placeholder not substituted"
+  elif grep -q 'const DATA = \[' "$REWIND_HOME/t.html"; then ok "data substituted"
+  else bad "no DATA array in the timeline at all"; fi
   python3 - <<PY
 import re,json,sys
 h=open("$REWIND_HOME/t.html").read()
@@ -128,7 +146,7 @@ head_ "7. The daemon fails loudly, never silently"
 rm -rf /tmp/rw-fail
 # hide screencapture but KEEP python on PATH, or the test breaks itself
 PY3=$(command -v python3)
-code=$(REWIND_HOME=/tmp/rw-fail REWIND_MAX_ERRORS=2 PATH=/opt/homebrew/bin \
+code=$(REWIND_HOME=/tmp/rw-fail REWIND_MAX_ERRORS=2 PATH="$(dirname "$(brewbin ffmpeg)")" \
         "$PY3" "$REW" start --foreground --interval 1 2>/tmp/rw-fail.err; echo $?)
 [ "$code" = "1" ] && ok "gives up with a non-zero exit when capture keeps failing" \
   || bad "kept looping on repeated capture failure (exit $code)"
