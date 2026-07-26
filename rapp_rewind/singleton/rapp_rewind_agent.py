@@ -18,7 +18,7 @@ from agents.basic_agent import BasicAgent
 __manifest__ = {
     "schema": "rapp-agent/1.0",
     "name": "rapp_rewind",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "A local, searchable memory of everything that has been on your screen.",
     "author": "@kody-w",
     "tags": ["screen", "ocr", "search", "memory", "local-first", "privacy"],

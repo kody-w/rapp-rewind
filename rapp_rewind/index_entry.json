@@ -1,7 +1,7 @@
 {
   "id": "rapp_rewind",
   "name": "RAPP Rewind",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "summary": "A local, searchable memory of everything that has been on your screen. Captures on an interval, reads the text with Apple's on-device Vision OCR, and indexes it in SQLite FTS5 so you can search what you saw. Nothing leaves the machine: there is no network call anywhere in the capture, OCR, index or search path.",
   "tagline": "A local, searchable memory of everything that has been on your screen.",
   "category": "productivity",

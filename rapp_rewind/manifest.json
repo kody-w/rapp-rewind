@@ -2,7 +2,7 @@
   "schema": "rapp-application/1.0",
   "id": "rapp_rewind",
   "name": "RAPP Rewind",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "@kody-w",
   "manifest_name": "@kody-w/rapp-rewind-singleton",
   "runtime": "twin",
