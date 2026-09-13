@@ -6,17 +6,18 @@ the main display **inside the app process**. Vision OCR, grayscale fingerprints,
 and system SQLite/FTS5 run locally. The installed native path needs no Python,
 ffmpeg, Homebrew, helper server, Accessibility grant, microphone, or cloud account.
 
-## Published 1.2.0 application
+## Published 1.2.1 application
 
-The signed/notarized download remains 1.2.0. Version 1.2.1 is the unreleased
-source successor and requires new release artifacts before publication.
-
-The [live v1.2.0 release](https://github.com/kody-w/rapp-rewind/releases/tag/v1.2.0)
+The [live v1.2.1 release](https://github.com/kody-w/rapp-rewind/releases/tag/v1.2.1)
 provides Developer ID signed, notarized, stapled applications for both
 architectures:
 
-- [Apple silicon / arm64 ZIP](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip)
-- [Intel / x86_64 ZIP](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip)
+- [Apple silicon / arm64 ZIP](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-arm64.zip)
+  · [evidence](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-arm64.zip.evidence.9d9436546d1620ec6c346b250523270e2e4340fcec762122f23711e428be2e28.json)
+  · [provenance](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-arm64.release-result.json)
+- [Intel / x86_64 ZIP](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-x86_64.zip)
+  · [evidence](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-x86_64.zip.evidence.5fac5cc67ed4ab024eb61915703fa149faae8644cd6e24508dfff8f20d7209c4.json)
+  · [provenance](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-x86_64.release-result.json)
 
 In Finder, double-click the ZIP, drag **RAPPRewind.app** to **Applications**, and
 launch it there. The native app requires no Python installation or security
@@ -24,8 +25,8 @@ bypass. Configure and save privacy exclusions before pressing Start; recording
 and optional login/background operation remain explicit opt-ins.
 
 Native source and tag remain pinned to
-`34361996042c0548065dbd7e3ba5456b6cfffaee`. The
-[successful matching-source CI run](https://github.com/kody-w/rapp-rewind/actions/runs/34734085666)
+`461e54a49d2ed5422511f271a473bfa7e4112d77`. The
+[successful matching-source CI run](https://github.com/kody-w/rapp-rewind/actions/runs/34767506975)
 is the public build reference. Per-architecture release evidence is linked from
 the release and the package's `desktop` metadata, whose exact byte counts and
 SHA-256 values describe the live ZIPs and reports.
