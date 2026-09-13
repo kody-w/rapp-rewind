@@ -2,7 +2,7 @@
   "schema": "rapp-application/1.0",
   "id": "rapp_rewind",
   "name": "RAPP Rewind",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "publisher": "@kody-w",
   "manifest_name": "@kody-w/rapp-rewind-singleton",
   "runtime": "twin",
@@ -31,33 +31,33 @@
     "bundle_id": "io.rapp.rewind",
     "source": {
       "repo": "kody-w/rapp-rewind",
-      "commit_sha": "34361996042c0548065dbd7e3ba5456b6cfffaee"
+      "commit_sha": "461e54a49d2ed5422511f271a473bfa7e4112d77"
     },
-    "release_tag": "v1.2.0",
+    "release_tag": "v1.2.1",
     "artifacts": [
       {
         "arch": "arm64",
-        "bytes": 442745,
+        "bytes": 443434,
         "evidence": {
           "bytes": 2625,
-          "sha256": "050cf6198819cc141db10caea09c935039f8ac2226c174fecabb08c92fa21c2d",
-          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip.evidence.050cf6198819cc141db10caea09c935039f8ac2226c174fecabb08c92fa21c2d.json"
+          "sha256": "9d9436546d1620ec6c346b250523270e2e4340fcec762122f23711e428be2e28",
+          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-arm64.zip.evidence.9d9436546d1620ec6c346b250523270e2e4340fcec762122f23711e428be2e28.json"
         },
         "format": "zip",
-        "sha256": "04367fa6c12a709c90562262d52f249268b8144e0e2db785e2a88c2d13447128",
-        "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip"
+        "sha256": "0df4bdb7bf900b26ab98551ae1600cc81c38e732bb2290bdce780f412a656dff",
+        "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-arm64.zip"
       },
       {
         "arch": "x86_64",
-        "bytes": 470073,
+        "bytes": 470750,
         "evidence": {
           "bytes": 2629,
-          "sha256": "e4dcebb30d544f67a49587921574a905b2229e6685f27c546749e343f04d5b5c",
-          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip.evidence.e4dcebb30d544f67a49587921574a905b2229e6685f27c546749e343f04d5b5c.json"
+          "sha256": "5fac5cc67ed4ab024eb61915703fa149faae8644cd6e24508dfff8f20d7209c4",
+          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-x86_64.zip.evidence.5fac5cc67ed4ab024eb61915703fa149faae8644cd6e24508dfff8f20d7209c4.json"
         },
         "format": "zip",
-        "sha256": "124d4e9d30b7f116a88fe0997a64a52e17dbae961dbf7a4937c1a39bf0aa1e96",
-        "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip"
+        "sha256": "f82e33162715eec567917641d075b287a2a7ce29be4ba3c5c600a94c2cb4d51b",
+        "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-x86_64.zip"
       }
     ],
     "prerequisites": [
@@ -82,5 +82,5 @@
     "agents": "twin/agents",
     "port": 7092
   },
-  "egg_note": "The copy of this manifest inside the .egg describes a hatch cartridge: it carries twin/ and state/ only. `agent` and `ui` are bundle-relative paths that live in the source repo, not in the egg \u2014 the twin loads twin/agents/, not singleton/."
+  "egg_note": "The retained .egg is an unchanged legacy hatch cartridge. Its embedded metadata remains historical; it is not the native 1.2.1 application or installer."
 }

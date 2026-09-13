@@ -2,17 +2,19 @@
 
 A local, searchable memory of everything that has been on your screen. Captures on an interval, reads the text with Apple's on-device Vision OCR, and indexes it in SQLite FTS5 so you can search what you saw. Nothing leaves the machine: there is no network call anywhere in the capture, OCR, index or search path.
 
-Version **1.2.0** includes the primary native macOS application and optional
+Version **1.2.1** includes the primary native macOS application and optional
 `runtime: "twin"` integration. The existing twin uses port 7092 with its own agent;
 the host reaches it over twin-chat. The protocol and port are unchanged.
-The current native source targets the unreleased 1.2.1 successor; the published
-desktop descriptors and retired egg remain bound to 1.2.0 and earlier history.
 
 ## Install the released macOS app
 
-Download the [live v1.2.0 release](https://github.com/kody-w/rapp-rewind/releases/tag/v1.2.0):
-[Apple silicon / arm64](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip)
-or [Intel / x86_64](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip).
+Download the [live v1.2.1 release](https://github.com/kody-w/rapp-rewind/releases/tag/v1.2.1):
+[Apple silicon / arm64](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-arm64.zip)
+([evidence](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-arm64.zip.evidence.9d9436546d1620ec6c346b250523270e2e4340fcec762122f23711e428be2e28.json),
+[provenance](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-arm64.release-result.json))
+or [Intel / x86_64](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-x86_64.zip)
+([evidence](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-x86_64.zip.evidence.5fac5cc67ed4ab024eb61915703fa149faae8644cd6e24508dfff8f20d7209c4.json),
+[provenance](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.1/rapp_rewind-1.2.1-x86_64.release-result.json)).
 Both apps are Developer ID signed, notarized, stapled, and Gatekeeper accepted.
 Double-click the ZIP in Finder, drag **RAPPRewind.app** to **Applications**, then
 launch it there. Review and save privacy exclusions before pressing **Start**.
@@ -20,9 +22,9 @@ Screen Recording belongs to this app; recording never starts at launch or login.
 
 The manifest and index entry carry matching `rapp-desktop/1.0` descriptors with
 the live archives' exact hashes, sizes, and evidence URLs. Their native-build
-source is `34361996042c0548065dbd7e3ba5456b6cfffaee`; integration metadata may be
+source is `461e54a49d2ed5422511f271a473bfa7e4112d77`; integration metadata is
 published in a later commit. The retired egg is preserved unchanged and is not
-a native installer or a regenerated 1.2.0 cartridge.
+a native installer or a regenerated 1.2.1 cartridge.
 
 ## Actions
 
