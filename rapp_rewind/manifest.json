@@ -39,9 +39,9 @@
         "arch": "arm64",
         "bytes": 442745,
         "evidence": {
-          "bytes": 2649,
-          "sha256": "821fe4a14c912f018264eaf426bbeaeff079a8814cf94bfcef402d75b0a8c551",
-          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip.evidence.json"
+          "bytes": 2625,
+          "sha256": "050cf6198819cc141db10caea09c935039f8ac2226c174fecabb08c92fa21c2d",
+          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip.evidence.050cf6198819cc141db10caea09c935039f8ac2226c174fecabb08c92fa21c2d.json"
         },
         "format": "zip",
         "sha256": "04367fa6c12a709c90562262d52f249268b8144e0e2db785e2a88c2d13447128",
@@ -51,9 +51,9 @@
         "arch": "x86_64",
         "bytes": 470073,
         "evidence": {
-          "bytes": 2653,
-          "sha256": "e60e9621fc2deebb64adf3d6056379e3298995fe60715f64e57abcc0fbaba1b8",
-          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip.evidence.json"
+          "bytes": 2629,
+          "sha256": "e4dcebb30d544f67a49587921574a905b2229e6685f27c546749e343f04d5b5c",
+          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip.evidence.e4dcebb30d544f67a49587921574a905b2229e6685f27c546749e343f04d5b5c.json"
         },
         "format": "zip",
         "sha256": "124d4e9d30b7f116a88fe0997a64a52e17dbae961dbf7a4937c1a39bf0aa1e96",
