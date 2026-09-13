@@ -95,8 +95,10 @@ Stop the existing capture session yourself before switching engines.
 
 ## Build the actual application
 
-For this development checkout, the shared package is at `../../rapp-tools`
-(`RAPPDesktopSupport`). Publication should pin the parent-provided tested commit.
+SwiftPM and XcodeGen fetch `RAPPDesktopSupport` from
+`https://github.com/kody-w/rapp-tools.git`, pinned to immutable revision
+`f0bc616c2aed34f2a88888806ed056ec7bafba61`. The SwiftPM and generated Xcode
+workspace lockfiles are committed; no sibling checkout is required.
 Apple frameworks and SDK SQLite are the only native processing dependencies.
 
 ```bash

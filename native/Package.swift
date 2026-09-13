@@ -8,7 +8,12 @@ let package = Package(
         .executable(name: "RAPPRewind", targets: ["RAPPRewind"]),
         .library(name: "RAPPRewindCore", targets: ["RAPPRewindCore"])
     ],
-    dependencies: [.package(path: "../../rapp-tools")],
+    dependencies: [
+        .package(
+            url: "https://github.com/kody-w/rapp-tools.git",
+            revision: "f0bc616c2aed34f2a88888806ed056ec7bafba61"
+        )
+    ],
     targets: [
         .systemLibrary(name: "CSQLite"),
         .target(

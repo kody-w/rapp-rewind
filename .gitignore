@@ -13,6 +13,14 @@ __pycache__/
 # Native build products and generated test fixtures.
 native/.build/
 native/.swiftpm/
-native/*.xcodeproj/
+# Keep generated project files out of source control except the dependency pin.
+native/*.xcodeproj/*
+!native/*.xcodeproj/project.xcworkspace/
+native/*.xcodeproj/project.xcworkspace/*
+!native/*.xcodeproj/project.xcworkspace/xcshareddata/
+native/*.xcodeproj/project.xcworkspace/xcshareddata/*
+!native/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+native/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
+!native/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 native/build/
 native/test-results/
