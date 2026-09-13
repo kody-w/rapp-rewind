@@ -6,6 +6,29 @@ the main display **inside the app process**. Vision OCR, grayscale fingerprints,
 and system SQLite/FTS5 run locally. The installed native path needs no Python,
 ffmpeg, Homebrew, helper server, Accessibility grant, microphone, or cloud account.
 
+## Published 1.2.0 application
+
+The [live v1.2.0 release](https://github.com/kody-w/rapp-rewind/releases/tag/v1.2.0)
+provides Developer ID signed, notarized, stapled applications for both
+architectures:
+
+- [Apple silicon / arm64 ZIP](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip)
+- [Intel / x86_64 ZIP](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip)
+
+In Finder, double-click the ZIP, drag **RAPPRewind.app** to **Applications**, and
+launch it there. The native app requires no Python installation or security
+bypass. Configure and save privacy exclusions before pressing Start; recording
+and optional login/background operation remain explicit opt-ins.
+
+Native source and tag remain pinned to
+`34361996042c0548065dbd7e3ba5456b6cfffaee`. The
+[successful matching-source CI run](https://github.com/kody-w/rapp-rewind/actions/runs/34734085666)
+is the public build reference. Per-architecture release evidence is linked from
+the release and the package's `desktop` metadata, whose exact byte counts and
+SHA-256 values describe the live ZIPs and reports.
+Later manifest/integration metadata commits do not replace that native-build
+commit or move the released tag.
+
 ## Start, pause, stop
 
 Launch the installed **RAPP Rewind.app** and press **Start**. This is the only

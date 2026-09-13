@@ -1,8 +1,8 @@
 {
   "id": "rapp_rewind",
   "name": "RAPP Rewind",
-  "version": "1.1.0",
-  "summary": "A local, searchable memory of everything that has been on your screen. Captures on an interval, reads the text with Apple's on-device Vision OCR, and indexes it in SQLite FTS5 so you can search what you saw. Nothing leaves the machine: there is no network call anywhere in the capture, OCR, index or search path.",
+  "version": "1.2.0",
+  "summary": "Native macOS searchable screen memory with explicit Start/Pause/Stop, app-owned ScreenCaptureKit, on-device Vision OCR, and local SQLite FTS5. Capture, OCR, indexing, and search stay on this Mac; optional RAPP host integration is separate.",
   "tagline": "A local, searchable memory of everything that has been on your screen.",
   "category": "productivity",
   "tags": [
@@ -19,12 +19,64 @@
   "license": "MIT",
   "publisher": "@kody-w",
   "quality_tier": "community",
+  "desktop": {
+    "schema": "rapp-desktop/1.0",
+    "platform": "macos",
+    "minimum_os": "14.0",
+    "bundle_id": "io.rapp.rewind",
+    "source": {
+      "repo": "kody-w/rapp-rewind",
+      "commit_sha": "34361996042c0548065dbd7e3ba5456b6cfffaee"
+    },
+    "release_tag": "v1.2.0",
+    "artifacts": [
+      {
+        "arch": "arm64",
+        "bytes": 442745,
+        "evidence": {
+          "bytes": 2625,
+          "sha256": "050cf6198819cc141db10caea09c935039f8ac2226c174fecabb08c92fa21c2d",
+          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip.evidence.050cf6198819cc141db10caea09c935039f8ac2226c174fecabb08c92fa21c2d.json"
+        },
+        "format": "zip",
+        "sha256": "04367fa6c12a709c90562262d52f249268b8144e0e2db785e2a88c2d13447128",
+        "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip"
+      },
+      {
+        "arch": "x86_64",
+        "bytes": 470073,
+        "evidence": {
+          "bytes": 2629,
+          "sha256": "e4dcebb30d544f67a49587921574a905b2229e6685f27c546749e343f04d5b5c",
+          "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip.evidence.e4dcebb30d544f67a49587921574a905b2229e6685f27c546749e343f04d5b5c.json"
+        },
+        "format": "zip",
+        "sha256": "124d4e9d30b7f116a88fe0997a64a52e17dbae961dbf7a4937c1a39bf0aa1e96",
+        "url": "https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip"
+      }
+    ],
+    "prerequisites": [
+      "macOS 14.0 or later; choose arm64 for Apple silicon or x86_64 for Intel.",
+      "Screen Recording permission must be granted to RAPP Rewind itself after pressing Start; Terminal and Python grants are not inherited.",
+      "No additional tools, models, cloud account, Python, ffmpeg, Homebrew, microphone permission, or Accessibility permission are required for the native app.",
+      "Optional singleton/twin integration requires a Python-compatible RAPP host plus the separately installed native app, or an explicitly selected compatibility rewind CLI with its own dependencies."
+    ],
+    "privacy": "Capture is opt-in: RAPP Rewind requests its own Screen Recording grant only after Start and never records automatically at launch or login. ScreenCaptureKit capture, Vision OCR, fingerprints, SQLite indexing, and search stay on this Mac; no audio is captured and this processing path makes no network upload. Images, OCR text, and the index remain in ~/.rapprewind or an explicit REWIND_HOME. Visible content can include passwords and private messages; configure and save bundle-ID/window-title exclusions or pause before sensitive work. Rewind does not encrypt its files; protect the account and use FileVault. Image retention is off until enabled, and pruning keeps indexed text. Background operation and idle-at-login launch are separate explicit opt-ins. The optional RAPP host conversation may forward text returned by its agent to that host's LLM; use the native app or direct CLI when that conversation is not appropriate.",
+    "setup": [
+      "Download the versioned ZIP matching your Mac: arm64 for Apple silicon or x86_64 for Intel.",
+      "Double-click the ZIP in Finder to extract RAPPRewind.app, then drag the application to Applications.",
+      "Launch RAPP Rewind from Applications. No Terminal installer, Python setup, signing credentials, or security bypass is required.",
+      "Review Privacy & Settings, add and save exclusions if needed, then press Start to request Screen Recording for RAPP Rewind. If macOS requests a restart, quit and reopen the app before pressing Start again.",
+      "Use the visible Pause/Stop controls to stop collection. Search or select moments in the native timeline. Preview and confirm image pruning yourself; indexed text remains searchable.",
+      "Open at Login opens idle. Keep running when the last window closes is a separate setting; both options are off by default and require explicit opt-in."
+    ],
+    "agent_integration": "The native application is the primary download. The Python singleton/twin and web UI are secondary allowlisted integration for an existing RAPP host; dropping a .py file into a host does not install the macOS application. Install the native app separately. The adapter discovers it in Applications or through REWIND_NATIVE_APP and requires a successful Gatekeeper assessment; REWIND_CLI explicitly selects the legacy CLI instead. Native capture only reveals Start/Pause/Stop controls, doctor takes no screenshot, prune is always a preview, and bench uses generated pixels. The host's LLM conversation may receive agent search output. Existing twin port and protocol behavior are unchanged."
+  },
   "singleton_filename": "rapp_rewind_agent.py",
   "singleton_url": "https://raw.githubusercontent.com/kody-w/rapp-rewind/main/rapp_rewind/singleton/rapp_rewind_agent.py",
   "ui_url": "https://raw.githubusercontent.com/kody-w/rapp-rewind/main/rapp_rewind/ui/index.html",
   "ui_filename": "index.html",
-  "egg_url": "https://raw.githubusercontent.com/kody-w/rapp-rewind/main/rapp_rewind/eggs/rapp_rewind.egg",
-  "egg_note": "Ships with no state. The egg is the hatch cartridge only \u2014 no captures, recordings, transcripts, vocabulary or personal data.",
+  "egg_note": "The retired hatch cartridge is preserved unchanged for historical compatibility; it is not the native application or a regenerated 1.2.0 installer.",
   "source": {
     "type": "federation",
     "repo": "kody-w/rapp-rewind",
