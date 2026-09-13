@@ -2,6 +2,13 @@
 
 A local, searchable memory of everything that has been on your screen.
 
+**Native macOS app:** [`native/`](native/README.md) contains RAPP Rewind **1.2.0**
+for macOS 14+, with a real SwiftUI/AppKit window and menu-bar controls, app-owned
+ScreenCaptureKit capture, Vision OCR, system SQLite/FTS5, privacy exclusions,
+image-only retention, and optional idle-at-login/background lifecycle. It never
+starts recording at launch and needs no Python or ffmpeg for the native path.
+The existing CLI and history format remain supported.
+
 Captures the screen on an interval, reads the text with Apple's on-device Vision
 OCR, and indexes it in SQLite FTS5 — so you can find that thing you saw on
 Tuesday and cannot name. **The capture, OCR, index and search path makes no network call at all** — a test
@@ -10,8 +17,8 @@ goes through the host brainstem's LLM (GitHub Copilot by default), so anything t
 agent quotes back has passed through it. The CLI is the strict-local path.
 
 Built because the product that did this got acquired and switched off. This one
-cannot be switched off, because it is a shell script, a SQLite file, and two
-small binaries you compile yourself.
+cannot be switched off: both its native source and compatibility CLI operate
+on your own SQLite database and image files.
 
 ```
 screen ──► screencapture ──► downscale 1280px ──► fingerprint (dedup)
@@ -25,7 +32,15 @@ screen ──► screencapture ──► downscale 1280px ──► fingerprint 
 
 ---
 
-## Install
+## Install the native app
+
+Use the signed/notarized app distributed by the release pipeline, or build the
+true macOS app target using [the native build instructions](native/README.md).
+Open **RAPP Rewind.app**, then press **Start** to request the app's own Screen
+Recording grant. Terminal/Python permission is not inherited. Capture, search,
+and retention remain local. Unsigned development builds are not notarized releases.
+
+## Install the compatibility CLI
 
 ```bash
 git clone https://github.com/kody-w/rapp-rewind.git
@@ -37,9 +52,10 @@ It compiles two tiny Swift shims (Vision OCR, and the frontmost-app/window
 reader) with the Swift toolchain already on macOS. No Xcode project, no
 dependencies, no package manager.
 
-**Screen Recording permission** is required — macOS will prompt on the first
-capture. If it does not, add your terminal under *System Settings → Privacy &
-Security → Screen Recording*.
+**Screen Recording permission** for this legacy terminal path is required —
+macOS will prompt on the first capture. If it does not, add your terminal under
+*System Settings → Privacy & Security → Screen Recording*. The native app
+requests and owns a separate grant from its own app process.
 
 ---
 
@@ -65,9 +81,10 @@ Search is SQLite FTS5, so it takes `AND`, `OR`, `NOT`, `"exact phrase"` and
 
 ---
 
-## Measured on an Apple M4
+## Compatibility CLI measurements on an Apple M4
 
-Reproduce with `rewind bench` — do not take these on faith.
+Reproduce explicitly with `rewind bench` — do not take these on faith. These
+historical measurements are not native release benchmark evidence.
 
 | Step | Cost |
 |---|---|
@@ -142,23 +159,30 @@ search still works on pruned frames.
 
 ---
 
-## Running it continuously — and the wall you will hit
+## Native background capture and the legacy launchd limitation
+
+The native app fixes process ownership in code: ScreenCaptureKit and the
+permission request run inside `io.rapp.rewind`, not a Python/launchd child.
+Background operation and **Open at Login (idle)** are separate, disabled-by-default
+opt-ins. The menu bar keeps recording state and Pause/Stop visible. Login never
+starts capture. See [native lifecycle and permission details](native/README.md).
 
 `rewind start` works from a terminal that has Screen Recording permission. That
-is the supported path today, and it is what the numbers above were measured on.
+is the compatibility path, and it is what the numbers above were measured on.
 
 **A launchd agent does not work, and you should know why before you try.** TCC
 grants Screen Recording to the *responsible process*, and a background agent is
 not your terminal — so every capture fails with `could not create image from
 display`. Wrapping it in an unsigned `.app` bundle does not help either: macOS
-has nothing to attribute the grant to, so it never prompts. Both were tried and
-measured, not assumed.
+has nothing to attribute the grant to, so it never prompts. Those were the
+legacy wrapper experiments, not the new direct ScreenCaptureKit application
+target; the original results are kept here to explain the CLI/service warning.
 
 `./install.sh --service` still installs the agent and warns you about exactly
 this. To make it work you must grant Screen Recording to the `python3` binary the
-agent runs — a one-click decision that is genuinely yours, not something a script
-should do behind your back. A signed, notarised app bundle would fix it properly
-and is the right next step.
+agent runs — a decision that is genuinely yours, not something a script should
+do behind your back. Prefer the native app's app-owned capture and optional
+login item instead; installing it does not silently modify an existing service.
 
 What the daemon does *not* do any more is fail quietly. After five consecutive
 failures it stops and says why:
@@ -198,9 +222,10 @@ Environment variables, all optional:
   step and are not built.
 - **No encryption at rest.** The index is a plain SQLite file and the frames are
   plain JPEGs. Anyone with your user account can read them. Use FileVault.
-- **It records whatever is on screen**, including passwords in plain view and
-  other people's messages. There is no per-app exclusion list yet; that is the
-  first thing to add if you share a screen for a living.
+- **It can record sensitive visible content**, including passwords and other
+  people's messages. The native app supports bundle-ID and window-title
+  exclusions and explicit pause/stop; use whole-app exclusions for sensitive
+  work. The compatibility CLI retains its original full-screen behavior.
 
 ---
 
@@ -208,12 +233,15 @@ Environment variables, all optional:
 
 ```bash
 ./tools/dryrun.sh
+# Include native interoperability after building it:
+./tools/dryrun.sh --native-binary native/.build/debug/RAPPRewind
 ```
 
-27 assertions against a throwaway index in `/tmp`, so your real memory is never
-touched. It takes real screenshots — the only honest way to test a screen
-recorder — and deletes them. Deterministic behaviour is asserted; OCR output is
-measured and printed, because a suite that asserts on model output goes red for
-the wrong reason.
+The default dry run is now fixture-only: generated images and isolated databases
+under ignored `native/.build`, removed afterward. It does not capture your screen,
+read real history, or change permissions. Native `swift test -j 2` additionally
+tests the local engines, capture state machine, retention, privacy, schema
+compatibility, and late-result cancellation. Real-device TCC/signing checks remain
+an explicit human release gate, not a fabricated automated pass.
 
 MIT.

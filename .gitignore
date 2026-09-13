@@ -9,3 +9,18 @@ __pycache__/
 # joined credential-shaped literal even though no source file does, and
 # the publishing gate reads it and says NO-GO — correctly.
 *.pyc
+
+# Native build products and generated test fixtures.
+native/.build/
+native/.swiftpm/
+# Keep generated project files out of source control except the dependency pin.
+native/*.xcodeproj/*
+!native/*.xcodeproj/project.xcworkspace/
+native/*.xcodeproj/project.xcworkspace/*
+!native/*.xcodeproj/project.xcworkspace/xcshareddata/
+native/*.xcodeproj/project.xcworkspace/xcshareddata/*
+!native/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+native/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
+!native/*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+native/build/
+native/test-results/

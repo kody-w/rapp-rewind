@@ -1,0 +1,94 @@
+name: RAPPRewind
+options:
+  minimumXcodeGenVersion: 2.38.0
+  deploymentTarget:
+    macOS: "14.0"
+packages:
+  RAPPDesktopSupport:
+    url: https://github.com/kody-w/rapp-tools.git
+    revision: f0bc616c2aed34f2a88888806ed056ec7bafba61
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.2.0"
+    CURRENT_PROJECT_VERSION: "120"
+    ENABLE_HARDENED_RUNTIME: YES
+    CODE_SIGN_STYLE: Automatic
+targets:
+  RAPPRewindCore:
+    type: framework
+    platform: macOS
+    sources:
+      - path: Sources/RAPPRewindCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.rapp.rewind.core
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_INCLUDE_PATHS: "$(SRCROOT)/Sources/CSQLite"
+        OTHER_SWIFT_FLAGS: "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CSQLite/module.modulemap"
+    dependencies:
+      - sdk: libsqlite3.tbd
+  RAPPRewind:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/RAPPRewind
+        excludes:
+          - Resources
+      - path: Sources/RAPPRewind/Resources
+        buildPhase: resources
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleDisplayName: RAPP Rewind
+        CFBundleName: RAPP Rewind
+        CFBundleIdentifier: io.rapp.rewind
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        NSHighResolutionCapable: true
+        NSScreenCaptureUsageDescription: When you press Start, RAPP Rewind records the main display and indexes visible text locally so you can search your own screen history. Pause or Stop at any time.
+        CFBundleURLTypes:
+          - CFBundleURLName: io.rapp.rewind.actions
+            CFBundleURLSchemes:
+              - rapp-rewind
+    entitlements:
+      path: Signing/RAPPRewind.entitlements
+    settings:
+      base:
+        PRODUCT_NAME: RAPPRewind
+        PRODUCT_BUNDLE_IDENTIFIER: io.rapp.rewind
+        INFOPLIST_FILE: Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Signing/RAPPRewind.entitlements
+        ENABLE_APP_SANDBOX: NO
+        SWIFT_INCLUDE_PATHS: "$(SRCROOT)/Sources/CSQLite"
+        OTHER_SWIFT_FLAGS: "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CSQLite/module.modulemap"
+    dependencies:
+      - target: RAPPRewindCore
+        embed: true
+      - package: RAPPDesktopSupport
+        product: RAPPDesktopSupport
+  RAPPRewindCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/RAPPRewindCoreTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.rapp.rewind.core-tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_INCLUDE_PATHS: "$(SRCROOT)/Sources/CSQLite"
+        OTHER_SWIFT_FLAGS: "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CSQLite/module.modulemap"
+    dependencies:
+      - target: RAPPRewindCore
+schemes:
+  RAPPRewind:
+    build:
+      targets:
+        RAPPRewind: all
+        RAPPRewindCoreTests: [test]
+    test:
+      targets:
+        - RAPPRewindCoreTests

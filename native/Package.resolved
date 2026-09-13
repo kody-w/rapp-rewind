@@ -1,0 +1,13 @@
+{
+  "pins" : [
+    {
+      "identity" : "rapp-tools",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kody-w/rapp-tools.git",
+      "state" : {
+        "revision" : "f0bc616c2aed34f2a88888806ed056ec7bafba61"
+      }
+    }
+  ],
+  "version" : 2
+}

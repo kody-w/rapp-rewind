@@ -1,0 +1,24 @@
+RAPP Rewind 1.2.0
+
+Capture, Vision OCR, fingerprints, SQLite indexing, and search stay on this Mac.
+This app never contacts a cloud service and never starts recording at launch.
+Screen Recording consent belongs to this app, not to a shell or Python process.
+
+The default history remains ~/.rapprewind (or your explicit REWIND_HOME).
+Images and OCR text are not encrypted by Rewind. Use FileVault and protect your
+macOS account. Old-image retention is off until you enable it. Pruning never
+deletes indexed text. There is no native destructive database migration.
+
+Bundle-ID and window-title exclusions skip the complete sample when an excluded
+window is visible. ScreenCaptureKit also excludes known matching applications
+and windows from the sampled image. Rewind's own windows are always excluded.
+Window titles can change; exclude a whole application for sensitive work.
+
+Opening at login and continuing after the last window closes are separate,
+optional settings. Login always opens idle. Sleep/lock pauses capture; resuming
+is manual. The menu-bar status and Pause/Stop controls remain visible while
+background capture is enabled. Quitting always stops capture.
+
+The optional RAPP agent is a separate compatibility integration. Its host LLM
+can receive text that the agent reads back from search. The native app and CLI
+capture/OCR/index/search path do not make that conversation.
