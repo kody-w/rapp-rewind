@@ -1,4 +1,4 @@
-RAPP Rewind 1.2.0
+RAPP Rewind 1.2.1
 
 Capture, Vision OCR, fingerprints, SQLite indexing, and search stay on this Mac.
 This app never contacts a cloud service and never starts recording at launch.

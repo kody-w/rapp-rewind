@@ -1,12 +1,15 @@
 # RAPP Rewind for macOS
 
-Native version **1.2.0**, bundle ID **`io.rapp.rewind`**, macOS **14 or later**.
+Native source version **1.2.1**, bundle ID **`io.rapp.rewind`**, macOS **14 or later**.
 SwiftUI/AppKit provide the window and menu-bar controls; ScreenCaptureKit captures
 the main display **inside the app process**. Vision OCR, grayscale fingerprints,
 and system SQLite/FTS5 run locally. The installed native path needs no Python,
 ffmpeg, Homebrew, helper server, Accessibility grant, microphone, or cloud account.
 
 ## Published 1.2.0 application
+
+The signed/notarized download remains 1.2.0. Version 1.2.1 is the unreleased
+source successor and requires new release artifacts before publication.
 
 The [live v1.2.0 release](https://github.com/kody-w/rapp-rewind/releases/tag/v1.2.0)
 provides Developer ID signed, notarized, stapled applications for both

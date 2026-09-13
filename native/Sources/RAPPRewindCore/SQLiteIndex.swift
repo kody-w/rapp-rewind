@@ -101,6 +101,7 @@ private final class SQLiteDatabase {
 }
 
 public actor RewindIndex {
+    public typealias RemoveImage = @Sendable (URL) throws -> Void
     public static var sqliteVersion: String { String(cString: sqlite3_libversion()) }
 
     public static func verifyFTS5() throws {
@@ -140,9 +141,13 @@ public actor RewindIndex {
 
     public nonisolated let paths: RewindPaths
     private let database: SQLiteDatabase
+    private let removeImage: RemoveImage
 
-    public init(paths: RewindPaths) throws {
+    public init(paths: RewindPaths, removeImage: @escaping RemoveImage = {
+        try FileManager.default.removeItem(at: $0)
+    }) throws {
         self.paths = paths
+        self.removeImage = removeImage
         try RewindPaths.createPrivateDirectory(paths.root)
         if !FileManager.default.fileExists(atPath: paths.database.path) {
             guard FileManager.default.createFile(
@@ -347,13 +352,33 @@ public actor RewindIndex {
         var bytes: Int64 = 0
         for (row, file) in zip(rows, files) {
             try Task.checkCancellation()
-            // Commit each image independently: a later file error must not roll back
-            // metadata for earlier, successfully removed images.
+            let existed = FileManager.default.fileExists(atPath: file.path)
+            // Commit metadata before irreversibly deleting the image. If deletion
+            // fails, restore the original path/byte count so the row remains usable.
             try database.transaction {
                 try Task.checkCancellation()
                 try database.run("UPDATE frames SET path=NULL, bytes=0 WHERE id=?", [.integer(row.0)])
-                if FileManager.default.fileExists(atPath: file.path) {
-                    try FileManager.default.removeItem(at: file)
+            }
+            if existed {
+                do {
+                    try removeImage(file)
+                } catch {
+                    let removalError = error
+                    do {
+                        try database.transaction {
+                            try database.run(
+                                "UPDATE frames SET path=?, bytes=? WHERE id=? AND path IS NULL",
+                                [.text(row.1), .integer(row.2), .integer(row.0)]
+                            )
+                        }
+                    } catch {
+                        throw RewindError.database(
+                            "Image removal failed and metadata restoration also failed. "
+                            + "The original image remains at \(file.path). "
+                            + "Removal: \(removalError.localizedDescription); restore: \(error.localizedDescription)"
+                        )
+                    }
+                    throw removalError
                 }
             }
             count += 1

@@ -13,7 +13,7 @@ enum NativeCommands {
             let bundled = Bundle.main.bundleURL.pathExtension == "app"
             if bundled {
                 guard Bundle.main.bundleIdentifier == "io.rapp.rewind",
-                      Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String == "1.2.0",
+                      Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String == "1.2.1",
                       Bundle.main.object(forInfoDictionaryKey: "LSMinimumSystemVersion") as? String == "14.0",
                       let types = Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]],
                       types.contains(where: { ($0["CFBundleURLSchemes"] as? [String])?.contains("rapp-rewind") == true }) else {
@@ -27,7 +27,7 @@ enum NativeCommands {
             #endif
             guard resource != nil else { throw RewindError.invalidSetting("the native privacy resource is missing from this build") }
             let output: [String: Any] = [
-                "product": "RAPPRewind", "version": "1.2.0", "minimumMacOS": "14.0",
+                "product": "RAPPRewind", "version": "1.2.1", "minimumMacOS": "14.0",
                 "sqliteVersion": RewindIndex.sqliteVersion, "fts5": true,
                 "captureStarted": false, "permissionRequested": false,
                 "historyOpened": false, "sharedSupportLinked": true,
@@ -48,7 +48,7 @@ enum NativeCommands {
             case .doctor:
                 try RewindIndex.verifyFTS5()
                 print("""
-                    RAPP Rewind native 1.2.0 — local-only diagnostic
+                    RAPP Rewind native 1.2.1 — local-only diagnostic
                       bundle: \(Bundle.main.bundleIdentifier ?? "unbundled (capture requires the installed .app)")
                       SQLite \(RewindIndex.sqliteVersion): FTS5 verified in memory
                       Screen Recording: \(ScreenCaptureService().authorizationStatus().rawValue)

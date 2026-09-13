@@ -5,6 +5,8 @@ A local, searchable memory of everything that has been on your screen. Captures 
 Version **1.2.0** includes the primary native macOS application and optional
 `runtime: "twin"` integration. The existing twin uses port 7092 with its own agent;
 the host reaches it over twin-chat. The protocol and port are unchanged.
+The current native source targets the unreleased 1.2.1 successor; the published
+desktop descriptors and retired egg remain bound to 1.2.0 and earlier history.
 
 ## Install the released macOS app
 

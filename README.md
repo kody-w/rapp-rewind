@@ -2,12 +2,16 @@
 
 A local, searchable memory of everything that has been on your screen.
 
-**Native macOS app:** [`native/`](native/README.md) contains RAPP Rewind **1.2.0**
+**Published native macOS app:** [`native/`](native/README.md) contains RAPP Rewind **1.2.0**
 for macOS 14+, with a real SwiftUI/AppKit window and menu-bar controls, app-owned
 ScreenCaptureKit capture, Vision OCR, system SQLite/FTS5, privacy exclusions,
 image-only retention, and optional idle-at-login/background lifecycle. It never
 starts recording at launch and needs no Python or ffmpeg for the native path.
 The existing CLI and history format remain supported.
+
+The published native download remains 1.2.0. The current native source targets
+the unreleased 1.2.1 successor; existing release metadata and artifacts remain
+unchanged.
 
 Captures the screen on an interval, reads the text with Apple's on-device Vision
 OCR, and indexes it in SQLite FTS5 — so you can find that thing you saw on
@@ -173,6 +177,11 @@ rewind prune --days 30 --yes  # drop the images, KEEP the text
 Pruning is deliberately asymmetric: pixels are big and text is tiny, so old
 screenshots go while the words stay searchable forever. A test asserts that
 search still works on pruned frames.
+
+Both native and compatibility pruning validate stored image paths. Metadata is
+committed before an image is removed, and a failed removal restores its path and
+byte count. OCR infrastructure failures stop the compatibility capture instead
+of indexing an empty-text success.
 
 ---
 

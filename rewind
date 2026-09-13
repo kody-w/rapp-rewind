@@ -217,17 +217,25 @@ def screen_context():
 
 def ocr_text(path):
     if not os.access(OCR, os.X_OK):
-        # Loud, once per capture: an index that silently stores no text is worse
-        # than no index, because search then lies by omission.
-        log(f"OCR shim missing at {OCR} — frame stored with NO text. "
-            f"Run ./install.sh to build the Swift shims.")
-        return "", 0, 0.0
+        raise RuntimeError(
+            f"OCR shim missing at {OCR}. The frame was not indexed; "
+            f"run ./install.sh to build the Swift shims.")
     p = run([OCR, path], timeout=120)
+    if p.returncode != 0:
+        raise RuntimeError(
+            f"OCR shim exited {p.returncode}: "
+            f"{(p.stderr or '').strip()[:300] or 'no error text'}")
     try:
         d = json.loads((p.stdout or "").strip().splitlines()[-1])
-        return d.get("text", ""), int(d.get("lines", 0)), float(d.get("confidence", 0))
-    except Exception:
-        return "", 0, 0.0
+        if not isinstance(d, dict) or not isinstance(d.get("text"), str):
+            raise ValueError("expected an object with text")
+        lines = int(d.get("lines", 0))
+        confidence = float(d.get("confidence", 0))
+        if lines < 0 or not 0 <= confidence <= 1:
+            raise ValueError("invalid line count or confidence")
+        return d["text"], lines, confidence
+    except Exception as exc:
+        raise RuntimeError(f"OCR shim returned invalid output: {exc}") from exc
 
 
 def capture_once(conn, verbose=False):
@@ -262,7 +270,12 @@ def capture_once(conn, verbose=False):
         return "same", prev["id"]
 
     ctx = screen_context()
-    text, lines, conf = ocr_text(small)
+    try:
+        text, lines, conf = ocr_text(small)
+    except Exception as exc:
+        if os.path.exists(small):
+            os.remove(small)
+        return "error", str(exc)
     day = datetime.fromtimestamp(now).strftime("%Y-%m-%d")
     os.makedirs(os.path.join(FRAMES, day), exist_ok=True)
     rel = os.path.join(day, f"{int(now * 1000)}.jpg")
@@ -522,7 +535,11 @@ def cmd_open(a):
     if not r or not r["path"]:
         print("no image for that frame (pruned, or bad id)")
         return 1
-    p = os.path.join(FRAMES, r["path"])
+    try:
+        p = safe_frame_path(r["path"])
+    except ValueError as exc:
+        print(f"refusing unsafe frame path: {exc}", file=sys.stderr)
+        return 2
     subprocess.run(["open", p])
     print(p)
     return 0
@@ -566,6 +583,55 @@ def cmd_stats(a):
     return 0
 
 
+def safe_frame_path(relative):
+    if not isinstance(relative, str) or not relative or relative.startswith("/") \
+            or "\\" in relative or "\0" in relative:
+        raise ValueError("path must be a relative POSIX image path")
+    parts = relative.split("/")
+    if any(part in ("", ".", "..") for part in parts):
+        raise ValueError("path contains an unsafe component")
+    if os.path.splitext(parts[-1])[1].lower() not in (".jpg", ".jpeg", ".png"):
+        raise ValueError("path is not a supported frame image")
+    base = os.path.realpath(FRAMES)
+    candidate = os.path.join(base, *parts)
+    resolved = os.path.realpath(candidate)
+    if os.path.commonpath([base, resolved]) != base or os.path.islink(candidate):
+        raise ValueError("path escapes the frame store or is a symbolic link")
+    if os.path.lexists(candidate) and not os.path.isfile(candidate):
+        raise ValueError("path is not a regular image file")
+    return candidate
+
+
+def prune_image(conn, row, remove=None):
+    remove = remove or os.remove
+    path = safe_frame_path(row["path"])
+    existed = os.path.exists(path)
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("UPDATE frames SET path=NULL, bytes=0 WHERE id=?", (row["id"],))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    if not existed:
+        return
+    try:
+        remove(path)
+    except Exception as removal_error:
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("UPDATE frames SET path=?, bytes=? WHERE id=? AND path IS NULL",
+                         (row["path"], row["bytes"] or 0, row["id"]))
+            conn.commit()
+        except Exception as restore_error:
+            conn.rollback()
+            raise RuntimeError(
+                f"image removal failed and metadata restoration also failed; "
+                f"the original image remains at {path}: removal={removal_error}; "
+                f"restore={restore_error}") from removal_error
+        raise
+
+
 def cmd_prune(a):
     conn = db()
     cutoff = time.time() - a.days * 86400
@@ -579,12 +645,14 @@ def cmd_prune(a):
         print(f"would drop {len(rows):,} images ({freed / 1e9:.2f} GB) older than {a.days} days.")
         print("  text stays searchable. re-run with --yes to do it.")
         return 0
-    for r in rows:
-        p = os.path.join(FRAMES, r["path"])
-        if os.path.exists(p):
-            os.remove(p)
-        conn.execute("UPDATE frames SET path=NULL, bytes=0 WHERE id=?", (r["id"],))
-    conn.commit()
+    try:
+        for r in rows:
+            safe_frame_path(r["path"])
+        for r in rows:
+            prune_image(conn, r)
+    except Exception as exc:
+        print(f"prune stopped safely: {exc}", file=sys.stderr)
+        return 2
     for day in sorted(os.listdir(FRAMES)):
         d = os.path.join(FRAMES, day)
         if os.path.isdir(d) and not os.listdir(d):
