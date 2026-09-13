@@ -14,7 +14,8 @@ OCR, and indexes it in SQLite FTS5 — so you can find that thing you saw on
 Tuesday and cannot name. **The capture, OCR, index and search path makes no network call at all** — a test
 asserts it. Driving the hatched twin over `/chat` is different: that conversation
 goes through the host brainstem's LLM (GitHub Copilot by default), so anything the
-agent quotes back has passed through it. The CLI is the strict-local path.
+agent quotes back has passed through it. The native app and direct CLI are the
+strict-local paths.
 
 Built because the product that did this got acquired and switched off. This one
 cannot be switched off: both its native source and compatibility CLI operate
@@ -34,11 +35,27 @@ screen ──► screencapture ──► downscale 1280px ──► fingerprint 
 
 ## Install the native app
 
-Use the signed/notarized app distributed by the release pipeline, or build the
-true macOS app target using [the native build instructions](native/README.md).
-Open **RAPP Rewind.app**, then press **Start** to request the app's own Screen
-Recording grant. Terminal/Python permission is not inherited. Capture, search,
-and retention remain local. Unsigned development builds are not notarized releases.
+**[RAPP Rewind 1.2.0 is available](https://github.com/kody-w/rapp-rewind/releases/tag/v1.2.0)**
+for macOS 14+. Both architecture-specific apps are Developer ID signed,
+notarized, stapled, and Gatekeeper accepted:
+
+- **Apple silicon:** [arm64 ZIP](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip)
+  · [release evidence](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-arm64.zip.evidence.json)
+- **Intel:** [x86_64 ZIP](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip)
+  · [release evidence](https://github.com/kody-w/rapp-rewind/releases/download/v1.2.0/rapp_rewind-1.2.0-x86_64.zip.evidence.json)
+
+Double-click the downloaded ZIP in **Finder**, drag the extracted
+**RAPPRewind.app** to **Applications**, and launch it there. No Terminal installer,
+Python, Homebrew, signing credentials, or security bypass is required.
+Review and save privacy exclusions, then press **Start** to request the app's own
+Screen Recording grant. Terminal/Python permission is not inherited. Capture,
+search, and retention remain local; launch and login never start recording.
+
+The release is built from native source
+[`34361996042c0548065dbd7e3ba5456b6cfffaee`](https://github.com/kody-w/rapp-rewind/tree/34361996042c0548065dbd7e3ba5456b6cfffaee),
+with [matching-source CI](https://github.com/kody-w/rapp-rewind/actions/runs/34734085666).
+Source builds remain available through the [native instructions](native/README.md);
+an unsigned development build is not the published notarized application.
 
 ## Install the compatibility CLI
 
