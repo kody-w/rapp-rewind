@@ -190,3 +190,77 @@ Live-device release verification still requires a person to grant/deny the
 signed app's Screen Recording request, inspect a deliberately prepared test
 screen, verify excluded windows, and approve/test optional login behavior.
 Automated fixture results are not substituted for that TCC/signing evidence.
+
+## Public native CI and release source
+
+The same-repository workflow [`.github/workflows/native-ci.yml`](../.github/workflows/native-ci.yml)
+runs **arm64 on `macos-latest`** and **Intel on `macos-15-intel`**. It checks the
+actual process and built-app architecture rather than assuming a runner label is
+correct. It runs on main/release branch pushes, version tags, pull requests, and
+manual dispatch. Checkout does not persist credentials, permissions are
+`contents: read`, and there are no signing secrets or publication steps.
+
+The exact entrypoints, from the repository root, are:
+
+```bash
+./tools/native-ci.sh arm64    # arm64 runner / local arm64 Mac
+./tools/native-ci.sh x86_64   # Intel runner / local x86_64 process
+```
+
+The script runs these commands from `native` (`ARCH` is the requested architecture,
+and `LOG_DIR` is a unique directory under `.build/ci-logs/$ARCH/`):
+
+```bash
+swift test --disable-swift-testing --arch "$ARCH" --scratch-path ".build/ci-swift-$ARCH" \
+  --cache-path .build/ci-package-cache -j 2
+swift build --arch "$ARCH" --scratch-path ".build/ci-swift-$ARCH" \
+  --cache-path .build/ci-package-cache -c release -j 2
+xcodegen generate --spec project.yml
+xcodebuild -project RAPPRewind.xcodeproj -scheme RAPPRewind \
+  -configuration Release -destination "platform=macOS,arch=$ARCH" \
+  -derivedDataPath ".build/ci-xcode-$ARCH" \
+  -clonedSourcePackagesDirPath ".build/ci-xcode-$ARCH/SourcePackages" \
+  -resultBundlePath "$LOG_DIR/xcode-tests.xcresult" \
+  -jobs 2 -parallel-testing-enabled NO ONLY_ACTIVE_ARCH=YES \
+  "ARCHS=$ARCH" CODE_SIGNING_ALLOWED=NO build test
+../tools/dryrun.sh --native-binary "$PWD/.build/ci-swift-$ARCH/debug/RAPPRewind"
+".build/ci-xcode-$ARCH/Build/Products/Release/RAPPRewind.app/Contents/MacOS/RAPPRewind" --self-test
+```
+
+The test runner never launches the GUI, calls live capture/permission commands,
+registers login items, edits TCC, imports signing credentials, or signs/notarizes.
+These suites use XCTest; `--disable-swift-testing` avoids launching an unused
+second test engine (including its Swift 6.3 Rosetta architecture mismatch).
+Compatibility capture calls are fixture-backed mocks; the native benchmark in
+the compatibility suite uses generated pixels. Only logs and fixture-test results
+are uploaded, not unsigned application releases or user data. The script sets an
+unused, project-local `REWIND_HOME` and asserts no command opened it. Process scratch
+files remain under `native/.build`.
+
+### Process-scoped Git cache compatibility
+
+This machine's Git policy is `safe.bareRepository=explicit`. SwiftPM/Xcode invoke
+Git from their generated bare dependency caches without an explicit `--git-dir`,
+which otherwise makes immutable dependency resolution fail. For this trusted,
+pinned repository, the runner applies **exactly** the following to its own process
+tree:
+
+```bash
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=safe.bareRepository
+export GIT_CONFIG_VALUE_0=all
+```
+
+Equivalently, prefix a single resolution/build command with
+`GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.bareRepository GIT_CONFIG_VALUE_0=all`.
+These environment values do not write any Git configuration file and do not
+change global Git policy or author identity. Do not use `git config --global` for
+this workaround. It is build-time compatibility only, never a consumer-runtime
+setting. Both committed lockfiles are checked against the immutable support SHA.
+
+A successful public Actions run is a **build/verification reference**, not Apple
+signing or notarization evidence. The parent must push/dispatch this workflow on
+the actual final native-build commit and use a successful same-repository run
+whose `head_sha` matches that commit. The release tag must resolve to that native
+commit; a later catalog/manifest-only integration commit is separate. Signing,
+notarization, and final artifact publication remain parent-owned.
