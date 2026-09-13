@@ -1,0 +1,190 @@
+# RAPP Rewind for macOS
+
+Native version **1.2.0**, bundle ID **`io.rapp.rewind`**, macOS **14 or later**.
+SwiftUI/AppKit provide the window and menu-bar controls; ScreenCaptureKit captures
+the main display **inside the app process**. Vision OCR, grayscale fingerprints,
+and system SQLite/FTS5 run locally. The installed native path needs no Python,
+ffmpeg, Homebrew, helper server, Accessibility grant, microphone, or cloud account.
+
+## Start, pause, stop
+
+Launch the installed **RAPP Rewind.app** and press **Start**. This is the only
+recording consent action. The app requests its own Screen Recording permission;
+a grant to Terminal or Python does not apply. If macOS requests a restart after
+changing the grant, quit and reopen Rewind, then press Start again.
+
+The capture banner and menu-bar indicator show whether recording is active.
+**Pause** discards pending capture/OCR work and schedules nothing further.
+**Resume** is explicit. **Stop** ends the session. Neither launch nor login
+starts recording. Sleep, session deactivation, and screen lock pause capture;
+there is no automatic resume.
+
+Closing the last window quits and stops recording by default. To keep capturing
+with the window closed, explicitly enable and save **Keep running when the last
+window closes**. The menu-bar Pause/Stop controls remain available. **Open at
+Login (idle)** is a separate opt-in using `SMAppService.mainApp`; macOS can
+require approval in Login Items. Quitting always stops capture.
+
+## Search and privacy
+
+- Search accepts the existing FTS5 grammar: `AND`, `OR`, `NOT`, `"exact phrase"`,
+  and `prefix*`. Results are newest first, with bracketed snippets, app filtering,
+  and relative/ISO date filtering. Blank query displays the native timeline.
+- Select a moment to inspect its locally stored image and OCR text. **Open Image**
+  opens only an image inside the history's `frames` directory. Pruned moments keep
+  their searchable text.
+- Add exact bundle identifiers and case-insensitive window-title fragments in
+  **Privacy & Settings**, one per line. Saving a capture policy pauses recording.
+  A visible excluded window, even behind another app, skips the **entire sample**
+  before OCR. ScreenCaptureKit also filters the known excluded applications and
+  title-matching windows. Rewind's own windows are always filtered.
+- Title rules cannot predict titles a window has not yet exposed. Prefer excluding
+  the entire application for sensitive work; pause before handling secrets.
+  These controls apply to the native engine, not unrelated screen recorders or an
+  explicitly selected legacy CLI backend.
+- Diagnostics show permission/capture state, storage counters, paths, and bounded
+  session events without logging OCR text, titles, or images. Diagnostics do not
+  request permission or capture a screen.
+
+Rewind does **not** encrypt its database or images. Protect your account and use
+FileVault. It has no network capture/OCR/index/search client. A separate RAPP
+agent's host LLM may receive text returned by that agent; that is not the native
+local-only path.
+
+## Existing history, defaults, and retention
+
+The app uses **`~/.rapprewind`**, or your explicit **`REWIND_HOME`**, with the
+unchanged `index.sqlite3`, `frames`, `frames_fts`, and `meta` layout. Existing IDs,
+images, OCR text, counters, and timestamps are retained. The default interval,
+longest image edge, JPEG quality, fingerprint size, and thresholds remain
+4 seconds / 1280 px / 60 / 32×32 / mean `< 0.5` **and** max `< 12`.
+Native grayscale resampling uses CoreGraphics instead of ffmpeg.
+
+`REWIND_INTERVAL`, `REWIND_WIDTH`, `REWIND_QUALITY`, `REWIND_FP_GRID`,
+`REWIND_SAME_MEAN`, `REWIND_SAME_MAX`, and `REWIND_MAX_ERRORS` seed the native
+defaults if no saved native settings exist. Invalid values produce an error,
+not silent replacements. New settings are written only after **Save** to
+`native-settings.json` in the history directory; legacy configuration is not
+rewritten. The app does not read or migrate launchd preferences.
+
+Unchanged samples extend the previous moment without OCR, as in the CLI.
+Unlike a continuous segment, a pause, exclusion, error, restart, or changed
+policy resets the native deduplication candidate: unobserved intervals must not
+look like time spent viewing the previous screen. Counters and storage
+projections continue to use **shots taken**, not elapsed wall-clock time.
+
+**Image Retention → Preview** is non-destructive. Removing previewed images
+requires the app's confirmation button. The cutoff is the original capture
+timestamp (`ts < cutoff`), matching `rewind prune`; pixels and byte counts are
+removed, but all text, FTS rows, moment rows, and counters remain. Missing images
+can be reconciled; paths outside the frame directory are rejected.
+
+Automatic image retention is **off** until explicitly enabled and saved. If
+enabled, it runs at most hourly during an explicitly started capture session,
+not on app launch. There is no automatic text deletion or destructive migration.
+
+An early **contentless** `frames_fts` index is rejected with an explanation and
+left intact. Back up the entire history before considering the compatibility
+CLI's existing rebuild/re-OCR migration. That CLI migration occurs when the old
+index is opened; it can recover text only from images still present. Native Rewind
+does not silently drop/rebuild that table or re-index old user screenshots.
+
+The native app and updated CLI share a nonblocking capture lock. The app also
+recognizes an active legacy `capture.pid`; it never kills the legacy process.
+Stop the existing capture session yourself before switching engines.
+
+## Build the actual application
+
+For this development checkout, the shared package is at `../../rapp-tools`
+(`RAPPDesktopSupport`). Publication should pin the parent-provided tested commit.
+Apple frameworks and SDK SQLite are the only native processing dependencies.
+
+```bash
+cd native
+swift test -j 2
+swift build -c release -j 2
+
+xcodegen generate --spec project.yml
+xcodebuild -project RAPPRewind.xcodeproj -scheme RAPPRewind \
+  -configuration Release -destination 'generic/platform=macOS' \
+  -derivedDataPath .build/xcode -jobs 2 CODE_SIGNING_ALLOWED=NO build
+```
+
+The XcodeGen specification has a true macOS application target, an embedded core
+framework, and a core test target. The bundle is at
+`.build/xcode/Build/Products/Release/RAPPRewind.app`. `Info.plist` declares the
+product/version/URL scheme and Screen Recording explanation. Entitlements are
+empty: no sandbox migration, network, microphone, unsigned-code exception, or
+TCC bypass. Hardened runtime is enabled for signed builds.
+
+`swift build` produces a development executable, **not** a distributable `.app`.
+An unbundled executable is deliberately unable to request native recording
+permission. Use the actual app target for recording. Release signing,
+notarization, stapling, and catalog publication belong to the release pipeline;
+a successful unsigned build is not evidence of those steps.
+
+## Compatibility and bounded native actions
+
+The original `rewind` command, `src/ocr.swift`, and `src/context.swift` are retained.
+Singleton/twin actions are still `doctor`, `search`, `stats`, `capture`,
+`timeline`, `prune`, and `bench`; no RAPP protocol, identity, port, or retired egg
+is changed.
+
+The agents discover native bundles in `/Applications` or `~/Applications`, or
+through explicit `REWIND_NATIVE_APP=/path/RAPPRewind.app`. Discovery checks
+`io.rapp.rewind` and executable containment. Before calling its allowlisted
+native bridge, the agent requires a successful macOS Gatekeeper assessment; it
+does not weaken Gatekeeper for an unsigned development bundle. An explicit
+`REWIND_CLI` selects the compatibility backend instead.
+
+```bash
+RAPPRewind.app/Contents/MacOS/RAPPRewind --rewind-command doctor
+RAPPRewind.app/Contents/MacOS/RAPPRewind --rewind-command search 'ledger' --since 2d
+RAPPRewind.app/Contents/MacOS/RAPPRewind --rewind-command prune --days 30
+RAPPRewind.app/Contents/MacOS/RAPPRewind --self-test
+```
+
+Native `doctor` performs a permission preflight and an in-memory FTS5 check, not
+a screenshot. `capture` only reveals the app's controls; it does not press Start.
+`prune` is always a preview and rejects `--yes`. Native `bench` measures generated
+fixture pixels, explicitly **not** live screen-capture performance. Native
+`timeline` prints locally queried moments; the original CLI's HTML timeline is
+unchanged. Search returns exit 1 for no matches and exit 2 for errors.
+
+The registered `rapp-rewind://` routes can reveal capture controls, search,
+timeline, diagnostics, stats, image-by-ID, or a retention preview. They cannot
+start recording, approve permissions, delete images, or run arbitrary commands.
+There is no listener or public server.
+
+## Safe validation
+
+```bash
+cd native
+swift test -j 2
+swift build -j 2
+cd ..
+./tools/dryrun.sh --native-binary native/.build/debug/RAPPRewind
+```
+
+Tests generate their own images, clocks, capture responses, and SQLite databases
+under ignored `native/.build/test-fixtures` / `cli-fixtures`, then remove them.
+They never use real screen history, live screen capture, or global scratch
+directories. Coverage includes thresholds, OCR failures, FTS/snippets/query
+errors, CLI schemas/counters, contentless refusal, image-only pruning,
+exclusions, ownership, late permission/capture results, and start/pause/stop.
+`--self-test` never opens history or requests permission.
+
+Semantic automation can target identifiers such as:
+
+- `rewind.capture.start`, `.pause`, `.stop`, `.state`
+- `rewind.menu.start`, `.pause`, `.stop`, `.show`, `.quit`
+- `rewind.search.query`, `.submit`, `.app`, `.since`
+- `rewind.timeline.results`, `rewind.moment.<id>`, `rewind.moment.open`
+- `rewind.exclusions.bundles`, `.titles`, `rewind.settings.save`
+- `rewind.retention.preview`, `.confirm`, `.execute`
+- `rewind.permissions.status`, `.openSettings`, `rewind.diagnostics.refresh`
+
+Live-device release verification still requires a person to grant/deny the
+signed app's Screen Recording request, inspect a deliberately prepared test
+screen, verify excluded windows, and approve/test optional login behavior.
+Automated fixture results are not substituted for that TCC/signing evidence.

@@ -9,3 +9,10 @@ __pycache__/
 # joined credential-shaped literal even though no source file does, and
 # the publishing gate reads it and says NO-GO — correctly.
 *.pyc
+
+# Native build products and generated test fixtures.
+native/.build/
+native/.swiftpm/
+native/*.xcodeproj/
+native/build/
+native/test-results/

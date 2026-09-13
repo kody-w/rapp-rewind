@@ -17,6 +17,7 @@ collapses it (149 lines at 1024px), so 1280 is a measured floor, not a guess.
 """
 
 import argparse
+import fcntl
 import json
 import os
 import shutil
@@ -25,6 +26,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
+from contextlib import contextmanager
 
 HOME = os.path.expanduser("~")
 ROOT = os.environ.get("REWIND_HOME", os.path.join(HOME, ".rapprewind"))
@@ -330,6 +332,30 @@ def is_running():
         return False
 
 
+class CaptureBusyError(RuntimeError):
+    pass
+
+
+@contextmanager
+def capture_lock():
+    """Share capture ownership with the native app, without touching its TCC grant."""
+    os.makedirs(ROOT, exist_ok=True)
+    path = os.path.join(ROOT, "native-capture.lock")
+    fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, "r+") as handle:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise CaptureBusyError(
+                "another Rewind capture process owns this index; stop capture in "
+                "RAPP Rewind or the compatibility CLI before starting here"
+            ) from exc
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
 def cmd_start(a):
     if is_running():
         print(f"already running (pid {open(PIDFILE).read().strip()})")
@@ -352,6 +378,15 @@ def cmd_start(a):
 
 
 def capture_loop(interval):
+    try:
+        with capture_lock():
+            return _capture_loop(interval)
+    except CaptureBusyError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+
+def _capture_loop(interval):
     os.makedirs(LOGS, exist_ok=True)
     with open(PIDFILE, "w") as fh:
         fh.write(str(os.getpid()))
@@ -418,8 +453,16 @@ def cmd_stop(a):
 
 
 def cmd_capture(a):
-    conn = db()
-    kind, detail = capture_once(conn, verbose=True)
+    try:
+        with capture_lock():
+            conn = db()
+            try:
+                kind, detail = capture_once(conn, verbose=True)
+            finally:
+                conn.close()
+    except CaptureBusyError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     print(f"  {kind}: {detail}")
     return 0 if kind != "error" else 1
 

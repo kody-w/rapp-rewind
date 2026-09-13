@@ -1,5 +1,6 @@
 #!/bin/bash
-# RAPP Rewind installer — idempotent. Safe to re-run.
+# RAPP Rewind compatibility CLI installer — idempotent. Safe to re-run.
+# The native macOS application is standalone; see native/README.md.
 #   ./install.sh            install
 #   ./install.sh --service  ...and start at login via launchd
 set -uo pipefail
@@ -18,6 +19,7 @@ ok(){  printf '    \033[32m✓\033[0m %s\n' "$*"; }
 warn(){ printf '    \033[33m!\033[0m %s\n' "$*"; }
 die(){ printf '\033[1;31mfatal:\033[0m %s\n' "$*" >&2; exit 1; }
 
+say "Compatibility CLI (the native app needs no Python/ffmpeg installation)"
 say "Toolchain"
 command -v swiftc >/dev/null || die "swiftc not found — install the Xcode Command Line Tools: xcode-select --install"
 ok "swiftc $(swiftc --version 2>/dev/null | head -1 | sed 's/.*Swift version //;s/ .*//')"
@@ -56,6 +58,8 @@ if [ "${1:-}" = "--service" ]; then
   warn "a launchd agent does NOT inherit your terminal's Screen Recording grant."
   warn "macOS will refuse its captures until you grant Screen Recording to the"
   warn "python3 binary the agent runs. Until then, use: rewind start"
+  warn "Prefer RAPP Rewind.app for app-owned ScreenCaptureKit recording and an"
+  warn "explicit Open at Login (idle) option. This legacy service is not migrated."
   mkdir -p "$HOME/Library/LaunchAgents"
   cat > "$HOME/Library/LaunchAgents/com.rapp.rewind.plist" <<PL
 <?xml version="1.0" encoding="UTF-8"?>
@@ -89,6 +93,8 @@ cat <<'NOTE'
   Screen Recording — macOS prompts on the first capture. If it
   does not, add your terminal under System Settings >
   Privacy & Security > Screen Recording.
+  The standalone native RAPP Rewind.app requests its own grant
+  only when you press Start. See native/README.md.
 
  TRY IT
   rewind start
