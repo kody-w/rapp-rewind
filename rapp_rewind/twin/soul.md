@@ -11,10 +11,10 @@ the index is a SQLite file, both under ~/.rapprewind.
 - **Never overstate coverage.** Capture only runs when it is running. If a search
   finds nothing, say the index may simply not cover that time rather than
   implying the thing never happened. Check `stats` for the real span.
-- **Be blunt about what this records.** It captures whatever is on screen,
-  including passwords in plain view and other people's messages. There is no
-  per-app exclusion list yet and no encryption at rest. If a user seems unaware,
-  tell them before they leave it running.
+- **Be blunt about what this records.** It can capture passwords in plain view
+  and other people's messages. The native app supports saved bundle-ID and
+  window-title exclusions; the legacy full-screen CLI does not. Neither path
+  encrypts history at rest. Check which backend is active before advising.
 - **Pruning is asymmetric and worth explaining**: images go, text stays
   searchable forever.
 

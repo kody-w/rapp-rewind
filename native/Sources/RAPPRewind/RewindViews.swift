@@ -30,7 +30,7 @@ struct RewindWindow: View {
             HStack {
                 Label("On this Mac only • No audio • Main display", systemImage: "lock.shield")
                 Spacer()
-                Text("RAPP Rewind 1.2.0")
+                Text("RAPP Rewind 1.2.1")
             }
             .font(.caption)
             .foregroundStyle(.secondary)

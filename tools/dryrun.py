@@ -194,6 +194,31 @@ class CLIRegressionTests(FixtureCase):
             self.assertEqual(self.rewind.capture_once(connection), ("error", "sips downscale failed"))
         self.assertEqual(connection.execute("SELECT count(*) FROM frames").fetchone()[0], 0)
 
+    def test_missing_or_invalid_ocr_fails_without_indexing_empty_text(self):
+        connection = self.db()
+        with mock.patch.object(self.rewind.os, "access", return_value=False):
+            with self.assertRaises(RuntimeError):
+                self.rewind.ocr_text("fixture.jpg")
+        with self.capture_fixture(), mock.patch.object(
+                self.rewind, "ocr_text", side_effect=RuntimeError("OCR shim missing")):
+            kind, message = self.rewind.capture_once(connection)
+        self.assertEqual(kind, "error")
+        self.assertIn("OCR shim missing", message)
+        self.assertEqual(connection.execute("SELECT count(*) FROM frames").fetchone()[0], 0)
+        self.assertEqual(connection.execute("SELECT count(*) FROM frames_fts").fetchone()[0], 0)
+
+        with mock.patch.object(self.rewind.os, "access", return_value=True), mock.patch.object(
+                self.rewind, "run",
+                return_value=subprocess.CompletedProcess([self.rewind.OCR], 0, "not-json", "")):
+            with self.assertRaises(RuntimeError):
+                self.rewind.ocr_text("fixture.jpg")
+        with self.capture_fixture(), mock.patch.object(
+                self.rewind, "ocr_text", side_effect=RuntimeError("OCR shim returned invalid output")):
+            kind, message = self.rewind.capture_once(connection)
+        self.assertEqual(kind, "error")
+        self.assertIn("invalid output", message)
+        self.assertEqual(connection.execute("SELECT count(*) FROM frames").fetchone()[0], 0)
+
     def test_search_matches_and_highlights_content_storing_fts(self):
         self.insert(self.db())
         code, output, _ = self.search("ledger")
@@ -260,6 +285,62 @@ class CLIRegressionTests(FixtureCase):
         self.assertEqual(self.rewind.counter(connection, "shots_new"), 1)
         self.assertEqual(self.search("ledger")[0], 0)
         self.assertIn("[ledger]", self.search("ledger")[1])
+
+    def test_prune_refuses_unsafe_database_paths(self):
+        connection = self.db()
+        identifier, name = self.insert(connection)
+        outside = self.home / "outside.jpg"
+        outside.write_bytes(image_fixture())
+        connection.execute("UPDATE frames SET path=? WHERE id=?", ("../outside.jpg", identifier))
+        connection.commit()
+        code, _, error = self.invoke(self.rewind.cmd_open, id=identifier)
+        self.assertEqual(code, 2)
+        self.assertIn("unsafe", error)
+        code, _, error = self.invoke(self.rewind.cmd_prune, days=0, yes=True)
+        self.assertEqual(code, 2)
+        self.assertIn("unsafe", error)
+        self.assertTrue(outside.exists())
+        self.assertTrue((self.home / "frames" / name).exists())
+
+        link = self.home / "frames/linked.jpg"
+        link.symlink_to(outside)
+        connection.execute("UPDATE frames SET path=? WHERE id=?", ("linked.jpg", identifier))
+        connection.commit()
+        code, _, error = self.invoke(self.rewind.cmd_prune, days=0, yes=True)
+        self.assertEqual(code, 2)
+        self.assertIn("symbolic link", error)
+        self.assertTrue(outside.exists())
+
+    def test_prune_remove_failure_restores_metadata_and_keeps_text(self):
+        connection = self.db()
+        identifier, name = self.insert(connection)
+        with mock.patch.object(self.rewind.os, "remove", side_effect=PermissionError("fixture refusal")):
+            code, _, error = self.invoke(self.rewind.cmd_prune, days=0, yes=True)
+        self.assertEqual(code, 2)
+        self.assertIn("prune stopped safely", error)
+        row = connection.execute("SELECT path,bytes FROM frames WHERE id=?", (identifier,)).fetchone()
+        self.assertEqual(row["path"], name)
+        self.assertGreater(row["bytes"], 0)
+        self.assertTrue((self.home / "frames" / name).exists())
+        self.assertEqual(self.search("ledger")[0], 0)
+
+    def test_prune_database_failure_never_deletes_original_image(self):
+        connection = self.db()
+        identifier, name = self.insert(connection)
+        connection.executescript("""
+            CREATE TRIGGER fixture_prune_failure
+            BEFORE UPDATE OF path ON frames
+            WHEN NEW.path IS NULL
+            BEGIN SELECT RAISE(ABORT, 'fixture prune failure'); END;
+        """)
+        connection.commit()
+        code, _, error = self.invoke(self.rewind.cmd_prune, days=0, yes=True)
+        self.assertEqual(code, 2)
+        self.assertIn("prune stopped safely", error)
+        row = connection.execute("SELECT path FROM frames WHERE id=?", (identifier,)).fetchone()
+        self.assertEqual(row["path"], name)
+        self.assertTrue((self.home / "frames" / name).exists())
+        self.assertEqual(self.search("ledger")[0], 0)
 
     def test_daemon_repeated_failures_are_bounded_and_explained(self):
         with mock.patch.object(self.rewind, "capture_once", return_value=("error", "fixture capture failed")), \
@@ -334,6 +415,12 @@ class CLIRegressionTests(FixtureCase):
         for path in (ROOT / "native" / "Sources").rglob("*.swift"):
             self.assertNotRegex(path.read_text(), r"\b(?:URLSession|NWConnection|URLRequest)\b", str(path))
 
+    def test_ci_actions_are_immutably_pinned(self):
+        workflow = (ROOT / ".github/workflows/native-ci.yml").read_text()
+        self.assertIn("actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", workflow)
+        self.assertIn("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", workflow)
+        self.assertNotRegex(workflow, r"uses:\s+actions/(checkout|upload-artifact)@v\\d")
+
 
 class AgentBridgeTests(FixtureCase):
     def load_agent(self, variant):
@@ -366,6 +453,13 @@ class AgentBridgeTests(FixtureCase):
                 output = instance.perform(action="prune", days=10, confirm=True)
             self.assertEqual(run.call_args.args[0], ["prune", "--days", "10"])
             self.assertIn("DRY RUN", output)
+
+    def test_integration_copy_distinguishes_native_privacy_from_host_chat(self):
+        soul = (ROOT / "rapp_rewind/twin/soul.md").read_text()
+        ui = (ROOT / "rapp_rewind/ui/index.html").read_text()
+        self.assertIn("native app supports saved bundle-ID", soul)
+        self.assertNotIn("There is no per-app exclusion list yet", soul)
+        self.assertIn("conversation model may be remote", ui)
 
     def test_native_discovery_validates_bundle_identity(self):
         agent = self.load_agent("singleton")

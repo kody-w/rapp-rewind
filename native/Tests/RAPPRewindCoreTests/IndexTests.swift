@@ -190,4 +190,90 @@ final class IndexTests: XCTestCase {
         let jpgs = (enumerator?.allObjects as? [URL] ?? []).filter { $0.pathExtension == "jpg" }
         XCTAssertEqual(jpgs.count, 0)
     }
+
+    func testPruneDatabaseFailureLeavesOriginalImageAndMetadata() async throws {
+        let directory = try fixture()
+        let index = try RewindIndex(paths: directory.paths)
+        let id = try await index.append(
+            FixtureDirectory.frame(), text: RecognizedText(text: "Preserved fixture", lines: 1, confidence: 1),
+            at: Date(timeIntervalSince1970: 1)
+        )
+        let image = try await index.imageURL(id: id)
+        try directory.sql("""
+            CREATE TRIGGER fixture_prune_failure
+            BEFORE UPDATE OF path ON frames
+            WHEN NEW.path IS NULL
+            BEGIN SELECT RAISE(ABORT, 'fixture prune failure'); END;
+            """)
+        await XCTAssertThrowsErrorAsync {
+            _ = try await index.pruneImages(before: Date(timeIntervalSince1970: 2))
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: image.path))
+        let preserved = try await index.moment(id: id)
+        let preservedSearch = try await index.search("Preserved")
+        XCTAssertNotNil(preserved?.relativePath)
+        XCTAssertEqual(preservedSearch.count, 1)
+    }
+
+    func testPruneRemovalFailureRestoresMetadataAndKeepsText() async throws {
+        let directory = try fixture()
+        let index = try RewindIndex(paths: directory.paths, removeImage: { _ in
+            throw CocoaError(.fileWriteNoPermission)
+        })
+        let id = try await index.append(
+            FixtureDirectory.frame(), text: RecognizedText(text: "Restored fixture", lines: 1, confidence: 1),
+            at: Date(timeIntervalSince1970: 1)
+        )
+        let image = try await index.imageURL(id: id)
+        await XCTAssertThrowsErrorAsync {
+            _ = try await index.pruneImages(before: Date(timeIntervalSince1970: 2))
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: image.path))
+        let restored = try await index.moment(id: id)
+        let restoredSearch = try await index.search("Restored")
+        XCTAssertNotNil(restored?.relativePath)
+        XCTAssertEqual(restoredSearch.count, 1)
+    }
+
+    func testPruneRestoreFailureStillKeepsImageAndSearchHistory() async throws {
+        let directory = try fixture()
+        let index = try RewindIndex(paths: directory.paths, removeImage: { _ in
+            try directory.sql("""
+                CREATE TRIGGER fixture_restore_failure
+                BEFORE UPDATE OF path ON frames
+                WHEN OLD.path IS NULL AND NEW.path IS NOT NULL
+                BEGIN SELECT RAISE(ABORT, 'fixture restore failure'); END;
+                """)
+            throw CocoaError(.fileWriteNoPermission)
+        })
+        let id = try await index.append(
+            FixtureDirectory.frame(), text: RecognizedText(text: "Search history survives", lines: 1, confidence: 1),
+            at: Date(timeIntervalSince1970: 1)
+        )
+        let image = try await index.imageURL(id: id)
+        do {
+            _ = try await index.pruneImages(before: Date(timeIntervalSince1970: 2))
+            XCTFail("Expected prune restoration failure")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("metadata restoration also failed"))
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: image.path))
+        let survivingSearch = try await index.search("survives")
+        let unresolved = try await index.moment(id: id)
+        XCTAssertEqual(survivingSearch.count, 1)
+        XCTAssertNil(unresolved?.relativePath)
+    }
+}
+
+private extension XCTestCase {
+    func XCTAssertThrowsErrorAsync(
+        _ expression: () async throws -> Void,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) async {
+        do {
+            try await expression()
+            XCTFail("Expected an error", file: file, line: line)
+        } catch {}
+    }
 }
