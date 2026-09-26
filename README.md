@@ -1,5 +1,9 @@
 # RAPP Rewind
 
+<!-- rapp1:network-header:start -->
+[![RAPP/1](https://kody-w.github.io/rapp-hive-public/portfolio/badges/rapp-rewind.svg)](https://github.com/kody-w/rapp-hive-public/blob/main/portfolio/repos/rapp-rewind.md) · **New to RAPP?** [Start here: get your Brainstem →](https://github.com/kody-w/rapp-installer#start-here)
+<!-- rapp1:network-header:end -->
+
 A local, searchable memory of everything that has been on your screen.
 
 **Native macOS app:** [`native/`](native/README.md) contains RAPP Rewind **1.2.1**
